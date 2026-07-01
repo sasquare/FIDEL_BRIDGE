@@ -5,8 +5,7 @@
 <span class="eyebrow">Customer Dashboard</span>
 <h1 class="mt-3 text-3xl font-extrabold text-brand-900">Welcome, {{ user.full_name }}</h1>
 <p class="mt-3 max-w-xl text-slate-600">
-  Your booking history and messages will appear here as they're built out in the next
-  phases. For now, jump straight into finding a professional.
+  Track your requests below, or find a new professional to hire.
 </p>
 
 <div class="mt-6">
@@ -16,16 +15,45 @@
 <div class="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
   <div class="card !p-6">
     <p class="text-sm font-semibold text-slate-500">Active Bookings</p>
-    <p class="mt-2 text-3xl font-extrabold text-brand-900">0</p>
+    <p class="mt-2 text-3xl font-extrabold text-brand-900">{{ stats.active }}</p>
   </div>
   <div class="card !p-6">
     <p class="text-sm font-semibold text-slate-500">Completed Jobs</p>
-    <p class="mt-2 text-3xl font-extrabold text-brand-900">0</p>
+    <p class="mt-2 text-3xl font-extrabold text-brand-900">{{ stats.completed }}</p>
   </div>
   <div class="card !p-6">
     <p class="text-sm font-semibold text-slate-500">Unread Messages</p>
     <p class="mt-2 text-3xl font-extrabold text-brand-900">0</p>
   </div>
+</div>
+
+<div class="mt-10">
+  <div class="flex items-center justify-between">
+    <h2 class="text-lg font-semibold text-brand-900">Recent Bookings</h2>
+    <a href="{{ url_for('customer.bookings') }}" class="text-sm font-semibold text-brand-700 hover:underline">View all &rarr;</a>
+  </div>
+
+  {% if recent_bookings %}
+  <div class="mt-4 flex flex-col gap-3">
+    {% for booking in recent_bookings %}
+    <a href="{{ url_for('customer.booking_detail', booking_id=booking.id) }}" class="card flex items-center justify-between !p-4">
+      <div>
+        <p class="text-sm font-semibold text-brand-900">{{ booking.title }}</p>
+        <p class="text-xs text-slate-500">with {{ booking.professional.user.full_name }} &middot; {{ booking.created_at.strftime("%d %b %Y") }}</p>
+      </div>
+      <span class="rounded-full px-3 py-1 text-xs font-semibold
+        {{ 'bg-emerald-50 text-emerald-700' if booking.status == 'completed'
+           else 'bg-red-50 text-red-700' if booking.status in ('cancelled', 'rejected')
+           else 'bg-brand-50 text-brand-700' if booking.status in ('accepted', 'in_progress')
+           else 'bg-amber-50 text-amber-700' }}">
+        {{ booking.status_label }}
+      </span>
+    </a>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="mt-4 text-sm italic text-slate-400">No bookings yet. Browse a category below to get started.</p>
+  {% endif %}
 </div>
 
 <div class="mt-10">

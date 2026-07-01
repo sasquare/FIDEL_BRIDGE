@@ -44,6 +44,9 @@ class ProfessionalProfile(db.Model):
         cascade="all, delete-orphan",
         order_by="Verification.uploaded_at.desc()",
     )
+    bookings = db.relationship(
+        "Booking", back_populates="professional", cascade="all, delete-orphan", order_by="Booking.created_at.desc()"
+    )
 
     @property
     def available_days_list(self):

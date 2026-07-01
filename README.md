@@ -19,8 +19,10 @@ This repository is being built in phases.
   professional profile pages.
 - **Phase 4:** professional dashboard — complete profile, skills, portfolio,
   availability, and verification document upload.
-- **Phase 5 (this phase):** corporate dashboard — company profile, and
+- **Phase 5:** corporate dashboard — company profile, and
   procurement / facility management / janitorial service requests.
+- **Phase 6 (this phase):** booking system — hire a professional, accept/
+  reject/complete jobs, and in-app notifications.
 
 ## Tech Stack
 

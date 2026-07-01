@@ -25,12 +25,41 @@
   </div>
   <div class="card !p-6">
     <p class="text-sm font-semibold text-slate-500">New Job Requests</p>
-    <p class="mt-2 text-3xl font-extrabold text-brand-900">0</p>
+    <p class="mt-2 text-3xl font-extrabold text-brand-900">{{ stats.new_requests }}</p>
   </div>
   <div class="card !p-6">
     <p class="text-sm font-semibold text-slate-500">Average Rating</p>
     <p class="mt-2 text-3xl font-extrabold text-brand-900">&mdash;</p>
   </div>
+</div>
+
+<div class="mt-10">
+  <div class="flex items-center justify-between">
+    <h2 class="text-lg font-semibold text-brand-900">Recent Job Requests</h2>
+    <a href="{{ url_for('professional.bookings') }}" class="text-sm font-semibold text-brand-700 hover:underline">View all &rarr;</a>
+  </div>
+
+  {% if recent_bookings %}
+  <div class="mt-4 flex flex-col gap-3">
+    {% for booking in recent_bookings %}
+    <a href="{{ url_for('professional.booking_detail', booking_id=booking.id) }}" class="card flex items-center justify-between !p-4">
+      <div>
+        <p class="text-sm font-semibold text-brand-900">{{ booking.title }}</p>
+        <p class="text-xs text-slate-500">from {{ booking.customer.user.full_name }} &middot; {{ booking.created_at.strftime("%d %b %Y") }}</p>
+      </div>
+      <span class="rounded-full px-3 py-1 text-xs font-semibold
+        {{ 'bg-emerald-50 text-emerald-700' if booking.status == 'completed'
+           else 'bg-red-50 text-red-700' if booking.status in ('cancelled', 'rejected')
+           else 'bg-brand-50 text-brand-700' if booking.status in ('accepted', 'in_progress')
+           else 'bg-amber-50 text-amber-700' }}">
+        {{ booking.status_label }}
+      </span>
+    </a>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="mt-4 text-sm italic text-slate-400">No job requests yet.</p>
+  {% endif %}
 </div>
 
 <div class="card mt-10 !p-6">

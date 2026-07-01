@@ -1,0 +1,79 @@
+{% extends "dashboard/_shell.html" %}
+{% block title %}{{ booking.title }} — FidelBridge{% endblock %}
+
+{% block dashboard_content %}
+<a href="{{ url_for('professional.bookings') }}" class="text-sm font-semibold text-slate-500 hover:text-brand-700">&larr; Back to job requests</a>
+
+<div class="card mt-6 !p-8">
+  <div class="flex flex-wrap items-start justify-between gap-4">
+    <div>
+      <span class="eyebrow">Request from {{ booking.customer.user.full_name }}</span>
+      <h1 class="mt-2 text-2xl font-extrabold text-brand-900">{{ booking.title }}</h1>
+      <p class="mt-1 text-sm text-slate-500">Received {{ booking.created_at.strftime("%d %b %Y") }}</p>
+    </div>
+    <span class="rounded-full px-3 py-1.5 text-sm font-semibold
+      {{ 'bg-emerald-50 text-emerald-700' if booking.status == 'completed'
+         else 'bg-red-50 text-red-700' if booking.status in ('cancelled', 'rejected')
+         else 'bg-brand-50 text-brand-700' if booking.status in ('accepted', 'in_progress')
+         else 'bg-amber-50 text-amber-700' }}">
+      {{ booking.status_label }}
+    </span>
+  </div>
+
+  <div class="mt-8 grid gap-4 border-t border-slate-100 pt-8 sm:grid-cols-3">
+    <div>
+      <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Location</p>
+      <p class="mt-1 text-sm font-semibold text-brand-900">{{ booking.location or "Not specified" }}</p>
+    </div>
+    <div>
+      <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Customer's Budget</p>
+      <p class="mt-1 text-sm font-semibold text-brand-900">
+        {{ "₦{:,}".format(booking.budget_naira) if booking.budget_naira else "Not specified" }}
+      </p>
+    </div>
+    <div>
+      <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Preferred Date</p>
+      <p class="mt-1 text-sm font-semibold text-brand-900">
+        {{ booking.preferred_date.strftime("%d %b %Y") if booking.preferred_date else "Flexible" }}
+      </p>
+    </div>
+  </div>
+
+  <div class="mt-8 border-t border-slate-100 pt-8">
+    <h2 class="text-sm font-semibold uppercase tracking-wide text-slate-400">Details</h2>
+    <p class="mt-3 whitespace-pre-line leading-relaxed text-slate-600">{{ booking.description }}</p>
+  </div>
+
+  {% if booking.status in ("accepted", "in_progress", "completed") and booking.customer.user.phone %}
+  <div class="mt-8 border-t border-slate-100 pt-8">
+    <h2 class="text-sm font-semibold uppercase tracking-wide text-slate-400">Contact</h2>
+    <p class="mt-3 text-sm text-slate-600">{{ booking.customer.user.phone }}</p>
+  </div>
+  {% endif %}
+
+  {% if booking.status in ("pending", "accepted", "in_progress") %}
+  <div class="mt-8 flex flex-wrap gap-3 border-t border-slate-100 pt-8">
+    {% if booking.status == "pending" %}
+    <form method="POST" action="{{ url_for('professional.accept_booking', booking_id=booking.id) }}">
+      {{ action_form.hidden_tag() }}
+      <button type="submit" class="btn-primary">Accept Job</button>
+    </form>
+    <form method="POST" action="{{ url_for('professional.reject_booking', booking_id=booking.id) }}">
+      {{ action_form.hidden_tag() }}
+      <button type="submit" class="btn-secondary !border-red-200 !text-red-600 hover:!border-red-300">Decline</button>
+    </form>
+    {% elif booking.status == "accepted" %}
+    <form method="POST" action="{{ url_for('professional.start_booking', booking_id=booking.id) }}">
+      {{ action_form.hidden_tag() }}
+      <button type="submit" class="btn-primary">Mark as In Progress</button>
+    </form>
+    {% elif booking.status == "in_progress" %}
+    <form method="POST" action="{{ url_for('professional.complete_booking', booking_id=booking.id) }}">
+      {{ action_form.hidden_tag() }}
+      <button type="submit" class="btn-primary">Mark as Completed</button>
+    </form>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

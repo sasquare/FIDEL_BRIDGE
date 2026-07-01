@@ -128,6 +128,19 @@ Visit **http://127.0.0.1:5000** — you should see the FidelBridge landing page.
   disappear.
 - Log in as a *different* corporate account and try to open the first
   corporate's request detail URL directly — it should 404.
+- As a customer, open a professional's public profile and click "Request
+  to Hire", fill in the form, and submit. Log in as that professional and
+  confirm the notification bell shows an unread badge, the job appears
+  under Job Requests, and the dashboard's "New Job Requests" count is 1.
+- Accept the job, then Mark as In Progress, then Mark as Completed — after
+  each step, confirm the customer sees a new notification and the status
+  badge updates on both sides.
+- Confirm the professional's phone number is hidden from the customer
+  while the request is still "Pending", and appears once it's "Accepted".
+- Try to accept an already-accepted booking directly via its accept URL —
+  it should 400, not silently re-accept.
+- As the customer, cancel a still-pending request from a *different*
+  booking and confirm the professional gets a "cancelled" notification.
 
 ## Running tests
 
@@ -135,9 +148,10 @@ Visit **http://127.0.0.1:5000** — you should see the FidelBridge landing page.
 pytest
 ```
 
-All tests should pass (40 as of Phase 5, across `tests/test_landing_page.py`,
+All tests should pass (51 as of Phase 6, across `tests/test_landing_page.py`,
 `tests/test_auth.py`, `tests/test_browse.py`, `tests/test_customer.py`,
-`tests/test_professional.py`, and `tests/test_corporate.py`).
+`tests/test_professional.py`, `tests/test_corporate.py`, and
+`tests/test_booking.py`).
 
 ## Common Errors & Troubleshooting
 

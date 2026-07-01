@@ -11,16 +11,18 @@ FIDEL_BRIDGE/
 │   │   ├── main/                # Public marketing pages (landing page, etc.)
 │   │   ├── auth/                 # Registration, login, logout
 │   │   ├── browse/               # Public category/professional search + profile pages
-│   │   ├── customer/             # Customer dashboard + profile (protected, role=customer)
-│   │   ├── professional/         # Professional dashboard (protected, role=professional)
-│   │   └── corporate/            # Corporate dashboard (protected, role=corporate)
+│   │   ├── customer/             # Customer dashboard, profile, bookings (protected, role=customer)
+│   │   ├── professional/         # Professional dashboard, profile, bookings (protected, role=professional)
+│   │   ├── corporate/            # Corporate dashboard (protected, role=corporate)
+│   │   └── notifications/        # Notification inbox (protected, any authenticated role)
 │   │       ├── __init__.py
 │   │       └── routes.py
 │   ├── forms/
 │   │   ├── auth.py            # Flask-WTF registration/login forms + validation
 │   │   ├── customer.py        # Customer profile edit form
 │   │   ├── professional.py    # Profile/skill/portfolio/verification-upload forms
-│   │   └── corporate.py       # Company profile + service-request forms
+│   │   ├── corporate.py       # Company profile + service-request forms
+│   │   └── booking.py         # Booking request form
 │   ├── models/
 │   │   ├── __init__.py        # Imports every model so Flask-Migrate sees them
 │   │   ├── roles.py           # Role constants (customer/professional/corporate/admin)
@@ -32,11 +34,14 @@ FIDEL_BRIDGE/
 │   │   ├── category.py        # Category (service categories: Electricians, Plumbers, ...)
 │   │   ├── skill.py           # Skill (1:many from ProfessionalProfile)
 │   │   ├── portfolio.py       # PortfolioItem (1:many from ProfessionalProfile)
-│   │   └── verification.py    # Verification (uploaded doc + pending/approved/rejected status)
+│   │   ├── verification.py    # Verification (uploaded doc + pending/approved/rejected status)
+│   │   ├── booking.py         # Booking (customer <-> professional job request + status lifecycle)
+│   │   └── notification.py    # Notification (per-user, optionally linked to a booking)
 │   ├── utils/
 │   │   ├── decorators.py      # role_required(*roles) route decorator
 │   │   ├── auth_helpers.py    # dashboard_url_for(user) role -> dashboard redirect
-│   │   └── uploads.py         # Secure file upload saving (random filenames, extension allow-list)
+│   │   ├── uploads.py         # Secure file upload saving (random filenames, extension allow-list)
+│   │   └── notifications.py   # notify(user, message, link) helper
 │   ├── templates/
 │   │   ├── base.html          # Shared HTML shell (head, nav, flash messages, footer, scripts)
 │   │   ├── partials/
@@ -65,19 +70,26 @@ FIDEL_BRIDGE/
 │   │   │   └── professional_profile.html
 │   │   ├── customer/
 │   │   │   ├── dashboard.html
-│   │   │   └── profile.html
+│   │   │   ├── profile.html
+│   │   │   ├── book_professional.html  # Booking request form, reached from a profile page
+│   │   │   ├── bookings.html           # List with status-filter tabs
+│   │   │   └── booking_detail.html     # Detail + cancel (while pending/accepted)
 │   │   ├── professional/
 │   │   │   ├── dashboard.html     # Profile-completion checklist + stats
 │   │   │   ├── profile.html
 │   │   │   ├── skills.html
 │   │   │   ├── portfolio.html
-│   │   │   └── verification.html
-│   │   └── corporate/
-│   │       ├── dashboard.html     # Stats + quick-create cards + recent requests
-│   │       ├── profile.html
-│   │       ├── requests.html      # List with status-filter tabs
-│   │       ├── request_form.html
-│   │       └── request_detail.html
+│   │   │   ├── verification.html
+│   │   │   ├── bookings.html      # List with status-filter tabs
+│   │   │   └── booking_detail.html  # Detail + Accept/Decline/Start/Complete
+│   │   ├── corporate/
+│   │   │   ├── dashboard.html     # Stats + quick-create cards + recent requests
+│   │   │   ├── profile.html
+│   │   │   ├── requests.html      # List with status-filter tabs
+│   │   │   ├── request_form.html
+│   │   │   └── request_detail.html
+│   │   └── notifications/
+│   │       └── index.html         # Notification inbox, mark-one/mark-all read
 │   └── static/
 │       ├── src/input.css      # Tailwind source (edit this)
 │       ├── css/output.css     # Compiled Tailwind CSS (generated, do not edit)
@@ -129,10 +141,22 @@ FIDEL_BRIDGE/
 - **Shared dashboard shell** (`dashboard/_shell.html`) factors out the
   sidebar-that-becomes-mobile-tabs layout so Phase 4/5 can reuse it for the
   professional and corporate dashboards instead of re-implementing it.
-- **No fake "Book Now" button**: the public professional profile shows
-  "Log In to Book" (anonymous) or a disabled "Booking Coming Soon" state
-  (logged in) rather than a button that looks functional but does nothing —
-  booking itself is Phase 6.
+- **Booking status transitions are separate routes, not a generic "update
+  status" endpoint.** Accept/Decline/Start/Complete/Cancel each check both
+  the current status and who's allowed to make that specific transition
+  (e.g. only the professional can accept; only the customer can cancel;
+  cancel only works from pending/accepted). A single generic status-update
+  route would let a client bypass those rules by just posting a different
+  status value.
+- **Notifications are queued, not sent, inside the same transaction as the
+  action that triggers them** (`notify()` calls `db.session.add()` but
+  never commits) — so a booking's status change and its notification are
+  always consistent; there's no window where one succeeds and the other
+  doesn't.
+- **Contact details are revealed progressively**: a professional's phone
+  number isn't on their public profile or visible to a customer whose
+  request is still pending — it only appears once a booking is accepted,
+  and only to the two parties involved.
 - **Verification documents are never served from `static/`.** Portfolio
   photos are meant to be public, so they're saved under
   `app/static/uploads/portfolio/` and served directly. Verification

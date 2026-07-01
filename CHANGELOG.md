@@ -145,3 +145,37 @@ app (real requests always get a fresh context and session), but it could
 have hidden real bugs in future tests. Fixed by no longer holding an app
 context open for the test body, so the test client's requests behave
 exactly like production requests.
+
+## Phase 6 — Booking System & Notifications
+
+- Added a `Booking` model (customer ↔ professional, one row per job
+  request) with a status lifecycle: `pending` → `accepted`/`rejected` by
+  the professional, then `in_progress` → `completed`, or `cancelled` by
+  the customer while still pending/accepted. Each transition is its own
+  route/button (Accept, Decline, Mark as In Progress, Mark as Completed,
+  Cancel) rather than a generic "update status" form, so each role can
+  only take the actions that make sense for them.
+- Added a `Notification` model and a `notify(user, message, link)` helper
+  that queues a notification alongside whatever booking action triggered
+  it (accept, reject, start, complete, cancel, and the original request),
+  committed together in one transaction.
+- Added a `notifications` blueprint: `/notifications` lists everything for
+  the current user (any role), with mark-one-read and mark-all-read.
+  Clicking a notification's "View" jumps straight to the relevant booking.
+- Added a bell icon to the navbar (desktop and mobile) showing an unread
+  badge, computed once per request via a context processor.
+- The public professional profile's "Booking Coming Soon" placeholder from
+  Phase 3 is now real: customers see "Request to Hire", which opens a
+  booking form (`/customer/book/<professional_id>`) pre-scoped to that
+  professional.
+- Customer and professional dashboards now show real booking stats
+  (active/completed for customers, new-request count for professionals)
+  and a "recent bookings"/"recent job requests" list, replacing the
+  Phase 1–5 placeholder zeros.
+- Contact details (phone number) are only revealed to each side once a
+  booking is accepted — not on the public profile, and not while a
+  request is still pending.
+- Extended the Pytest suite to cover the full accept → start → complete
+  lifecycle, rejection, cancellation rules (only from pending/accepted,
+  and only by the owning customer), cross-account access checks on
+  bookings, and the notifications page (51 tests total).

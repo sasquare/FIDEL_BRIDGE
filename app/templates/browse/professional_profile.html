@@ -31,9 +31,9 @@
       </div>
 
       {% if current_user.is_authenticated and current_user.role == "customer" %}
-      <button type="button" disabled class="btn-primary w-full shrink-0 cursor-not-allowed opacity-60 sm:w-auto" title="Booking is coming in a future update">
-        Booking Coming Soon
-      </button>
+      <a href="{{ url_for('customer.book_professional', professional_user_id=professional.user_id) }}" class="btn-primary w-full shrink-0 sm:w-auto">
+        Request to Hire
+      </a>
       {% elif not current_user.is_authenticated %}
       <a href="{{ url_for('auth.login', next=request.path) }}" class="btn-primary w-full shrink-0 sm:w-auto">Log In to Book</a>
       {% endif %}

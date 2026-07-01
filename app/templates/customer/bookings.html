@@ -1,0 +1,51 @@
+{% extends "dashboard/_shell.html" %}
+{% block title %}My Bookings — FidelBridge{% endblock %}
+
+{% block dashboard_content %}
+<span class="eyebrow">Bookings</span>
+<h1 class="mt-3 text-3xl font-extrabold text-brand-900">My Bookings</h1>
+
+<div class="mt-6 flex flex-wrap gap-2">
+  {% for key, label in [("", "All"), ("pending", "Pending"), ("accepted", "Accepted"), ("in_progress", "In Progress"), ("completed", "Completed"), ("rejected", "Rejected"), ("cancelled", "Cancelled")] %}
+  <a
+    href="{{ url_for('customer.bookings', status=key) if key else url_for('customer.bookings') }}"
+    class="rounded-full px-4 py-2 text-sm font-semibold {{ 'bg-brand-700 text-white' if status_filter == key else 'bg-slate-100 text-slate-600 hover:bg-slate-200' }}"
+  >
+    {{ label }}
+  </a>
+  {% endfor %}
+</div>
+
+{% if bookings %}
+<div class="mt-6 flex flex-col gap-3">
+  {% for booking in bookings %}
+  <a href="{{ url_for('customer.booking_detail', booking_id=booking.id) }}" class="card flex flex-wrap items-center justify-between gap-3 !p-5">
+    <div>
+      <p class="font-semibold text-brand-900">{{ booking.title }}</p>
+      <p class="mt-1 text-xs text-slate-500">
+        with {{ booking.professional.user.full_name }} &middot; {{ booking.created_at.strftime("%d %b %Y") }}
+      </p>
+    </div>
+    <span class="rounded-full px-3 py-1 text-xs font-semibold
+      {{ 'bg-emerald-50 text-emerald-700' if booking.status == 'completed'
+         else 'bg-red-50 text-red-700' if booking.status in ('cancelled', 'rejected')
+         else 'bg-brand-50 text-brand-700' if booking.status in ('accepted', 'in_progress')
+         else 'bg-amber-50 text-amber-700' }}">
+      {{ booking.status_label }}
+    </span>
+  </a>
+  {% endfor %}
+</div>
+{% else %}
+<div class="mt-14 flex flex-col items-center text-center">
+  <span class="flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 text-slate-400">
+    <svg class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+    </svg>
+  </span>
+  <h2 class="mt-4 text-lg font-semibold text-brand-900">No bookings here yet</h2>
+  <p class="mt-2 max-w-sm text-sm text-slate-500">Find a professional and send your first request.</p>
+  <a href="{{ url_for('browse.professionals') }}" class="btn-primary mt-6">Find a Professional</a>
+</div>
+{% endif %}
+{% endblock %}

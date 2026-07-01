@@ -16,6 +16,9 @@ class CustomerProfile(db.Model):
     created_at = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
 
     user = db.relationship("User", back_populates="customer_profile")
+    bookings = db.relationship(
+        "Booking", back_populates="customer", cascade="all, delete-orphan", order_by="Booking.created_at.desc()"
+    )
 
     def __repr__(self):
         return f"<CustomerProfile user_id={self.user_id}>"

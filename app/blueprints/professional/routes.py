@@ -1,4 +1,4 @@
-from flask import abort, current_app, flash, redirect, render_template, send_from_directory, url_for
+from flask import abort, current_app, flash, redirect, render_template, request, send_from_directory, url_for
 from flask_login import current_user
 from flask_wtf import FlaskForm
 
@@ -6,11 +6,20 @@ from app.blueprints.professional import professional_bp
 from app.extensions import db
 from app.forms.professional import PortfolioItemForm, ProfessionalProfileForm, SkillForm, VerificationUploadForm
 from app.models import roles
+from app.models.booking import (
+    STATUS_ACCEPTED,
+    STATUS_COMPLETED,
+    STATUS_IN_PROGRESS,
+    STATUS_PENDING,
+    STATUS_REJECTED,
+    Booking,
+)
 from app.models.category import Category
 from app.models.portfolio import PortfolioItem
 from app.models.skill import Skill
 from app.models.verification import Verification
 from app.utils.decorators import role_required
+from app.utils.notifications import notify
 from app.utils.uploads import save_portfolio_image, save_verification_document
 
 
@@ -18,6 +27,7 @@ def _sidebar_items():
     return [
         {"key": "dashboard", "label": "Dashboard", "url": url_for("professional.dashboard")},
         {"key": "profile", "label": "My Profile", "url": url_for("professional.profile")},
+        {"key": "bookings", "label": "Job Requests", "url": url_for("professional.bookings")},
         {"key": "skills", "label": "Skills", "url": url_for("professional.skills")},
         {"key": "portfolio", "label": "Portfolio", "url": url_for("professional.portfolio")},
         {"key": "verification", "label": "Verification", "url": url_for("professional.verification")},
@@ -28,16 +38,28 @@ def _current_professional():
     return current_user.professional_profile
 
 
+def _get_own_booking(booking_id):
+    return Booking.query.filter_by(
+        id=booking_id, professional_profile_id=_current_professional().id
+    ).first_or_404()
+
+
 @professional_bp.route("/dashboard")
 @role_required(roles.PROFESSIONAL)
 def dashboard():
     professional = _current_professional()
+    all_bookings = professional.bookings
+    stats = {
+        "new_requests": sum(1 for b in all_bookings if b.status == STATUS_PENDING),
+    }
     return render_template(
         "professional/dashboard.html",
         user=current_user,
         professional=professional,
         active="dashboard",
         sidebar_items=_sidebar_items(),
+        stats=stats,
+        recent_bookings=all_bookings[:5],
     )
 
 
@@ -208,3 +230,107 @@ def download_verification(verification_id):
         return send_from_directory(directory, doc.filename)
     except FileNotFoundError:
         abort(404)
+
+
+@professional_bp.route("/bookings")
+@role_required(roles.PROFESSIONAL)
+def bookings():
+    status_filter = request.args.get("status", "").strip()
+    all_bookings = _current_professional().bookings
+    if status_filter:
+        all_bookings = [b for b in all_bookings if b.status == status_filter]
+
+    return render_template(
+        "professional/bookings.html",
+        bookings=all_bookings,
+        status_filter=status_filter,
+        active="bookings",
+        sidebar_items=_sidebar_items(),
+    )
+
+
+@professional_bp.route("/bookings/<int:booking_id>")
+@role_required(roles.PROFESSIONAL)
+def booking_detail(booking_id):
+    booking = _get_own_booking(booking_id)
+    action_form = FlaskForm()
+
+    return render_template(
+        "professional/booking_detail.html",
+        booking=booking,
+        action_form=action_form,
+        active="bookings",
+        sidebar_items=_sidebar_items(),
+    )
+
+
+@professional_bp.route("/bookings/<int:booking_id>/accept", methods=["POST"])
+@role_required(roles.PROFESSIONAL)
+def accept_booking(booking_id):
+    booking = _get_own_booking(booking_id)
+    if booking.status != STATUS_PENDING:
+        abort(400)
+
+    booking.status = STATUS_ACCEPTED
+    notify(
+        booking.customer.user,
+        f"Your request ‘{booking.title}’ was accepted.",
+        link=url_for("customer.booking_detail", booking_id=booking.id),
+    )
+    db.session.commit()
+    flash("Job accepted.", "success")
+    return redirect(url_for("professional.booking_detail", booking_id=booking.id))
+
+
+@professional_bp.route("/bookings/<int:booking_id>/reject", methods=["POST"])
+@role_required(roles.PROFESSIONAL)
+def reject_booking(booking_id):
+    booking = _get_own_booking(booking_id)
+    if booking.status != STATUS_PENDING:
+        abort(400)
+
+    booking.status = STATUS_REJECTED
+    notify(
+        booking.customer.user,
+        f"Your request ‘{booking.title}’ was declined.",
+        link=url_for("customer.booking_detail", booking_id=booking.id),
+    )
+    db.session.commit()
+    flash("Job declined.", "success")
+    return redirect(url_for("professional.booking_detail", booking_id=booking.id))
+
+
+@professional_bp.route("/bookings/<int:booking_id>/start", methods=["POST"])
+@role_required(roles.PROFESSIONAL)
+def start_booking(booking_id):
+    booking = _get_own_booking(booking_id)
+    if booking.status != STATUS_ACCEPTED:
+        abort(400)
+
+    booking.status = STATUS_IN_PROGRESS
+    notify(
+        booking.customer.user,
+        f"Work has started on ‘{booking.title}’.",
+        link=url_for("customer.booking_detail", booking_id=booking.id),
+    )
+    db.session.commit()
+    flash("Job marked as in progress.", "success")
+    return redirect(url_for("professional.booking_detail", booking_id=booking.id))
+
+
+@professional_bp.route("/bookings/<int:booking_id>/complete", methods=["POST"])
+@role_required(roles.PROFESSIONAL)
+def complete_booking(booking_id):
+    booking = _get_own_booking(booking_id)
+    if booking.status != STATUS_IN_PROGRESS:
+        abort(400)
+
+    booking.status = STATUS_COMPLETED
+    notify(
+        booking.customer.user,
+        f"‘{booking.title}’ has been marked complete.",
+        link=url_for("customer.booking_detail", booking_id=booking.id),
+    )
+    db.session.commit()
+    flash("Job marked as completed.", "success")
+    return redirect(url_for("professional.booking_detail", booking_id=booking.id))

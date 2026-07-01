@@ -34,6 +34,12 @@ class User(UserMixin, db.Model):
     corporate_profile = db.relationship(
         "CorporateProfile", back_populates="user", uselist=False, cascade="all, delete-orphan"
     )
+    notifications = db.relationship(
+        "Notification",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        order_by="Notification.created_at.desc()",
+    )
 
     __table_args__ = (db.CheckConstraint(role.in_(ALL_ROLES), name="ck_users_role_valid"),)
 
