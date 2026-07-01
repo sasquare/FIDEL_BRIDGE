@@ -21,8 +21,10 @@ This repository is being built in phases.
   availability, and verification document upload.
 - **Phase 5:** corporate dashboard — company profile, and
   procurement / facility management / janitorial service requests.
-- **Phase 6 (this phase):** booking system — hire a professional, accept/
-  reject/complete jobs, and in-app notifications.
+- **Phase 6:** booking system — hire a professional, accept/reject/complete
+  jobs, and in-app notifications.
+- **Phase 7 (this phase):** messaging — conversation list, chat interface,
+  unread messages, and basic real-time updates (polling).
 
 ## Tech Stack
 

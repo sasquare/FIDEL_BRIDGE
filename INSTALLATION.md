@@ -141,6 +141,18 @@ Visit **http://127.0.0.1:5000** — you should see the FidelBridge landing page.
   it should 400, not silently re-accept.
 - As the customer, cancel a still-pending request from a *different*
   booking and confirm the professional gets a "cancelled" notification.
+- Try visiting `/messages/start/<id>` for a booking that's still "Pending"
+  — it should 400, since messaging only opens up once a booking is
+  accepted.
+- Once a booking is accepted, click "Message ..." from either side's
+  booking detail page, send a message, and confirm it appears in the
+  chat and the other party's message envelope icon shows an unread badge.
+- **Real-time check**: open the conversation as both parties in two
+  different browsers (or one normal + one incognito window). Send a
+  message from one side, then watch the other side's open chat tab —
+  within ~4 seconds the new message should appear without a page reload.
+- Confirm a third account (not a participant in that booking) gets a 404
+  when visiting the conversation URL directly.
 
 ## Running tests
 
@@ -148,10 +160,10 @@ Visit **http://127.0.0.1:5000** — you should see the FidelBridge landing page.
 pytest
 ```
 
-All tests should pass (51 as of Phase 6, across `tests/test_landing_page.py`,
+All tests should pass (60 as of Phase 7, across `tests/test_landing_page.py`,
 `tests/test_auth.py`, `tests/test_browse.py`, `tests/test_customer.py`,
-`tests/test_professional.py`, `tests/test_corporate.py`, and
-`tests/test_booking.py`).
+`tests/test_professional.py`, `tests/test_corporate.py`,
+`tests/test_booking.py`, and `tests/test_messaging.py`).
 
 ## Common Errors & Troubleshooting
 

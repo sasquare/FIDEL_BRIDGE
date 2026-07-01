@@ -19,6 +19,7 @@ from app.models.booking import (
 from app.models.category import Category
 from app.models.user import User
 from app.utils.decorators import role_required
+from app.utils.messaging import unread_message_count
 from app.utils.notifications import notify
 
 
@@ -27,6 +28,7 @@ def _sidebar_items():
         {"key": "dashboard", "label": "Dashboard", "url": url_for("customer.dashboard")},
         {"key": "profile", "label": "My Profile", "url": url_for("customer.profile")},
         {"key": "bookings", "label": "My Bookings", "url": url_for("customer.bookings")},
+        {"key": "messages", "label": "Messages", "url": url_for("messages.conversations")},
         {"key": "browse", "label": "Find Professionals", "url": url_for("browse.professionals")},
     ]
 
@@ -38,6 +40,7 @@ def dashboard():
     stats = {
         "active": sum(1 for b in all_bookings if b.status in (STATUS_PENDING, STATUS_ACCEPTED, STATUS_IN_PROGRESS)),
         "completed": sum(1 for b in all_bookings if b.status == STATUS_COMPLETED),
+        "unread_messages": unread_message_count(current_user),
     }
     return render_template(
         "customer/dashboard.html",

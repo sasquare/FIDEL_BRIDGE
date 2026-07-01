@@ -179,3 +179,46 @@ exactly like production requests.
   lifecycle, rejection, cancellation rules (only from pending/accepted,
   and only by the owning customer), cross-account access checks on
   bookings, and the notifications page (51 tests total).
+
+## Phase 7 — Messaging
+
+- Added `Conversation` (one per accepted booking, between the customer and
+  professional on that job) and `Message` models.
+- Added a `messages` blueprint: a conversation list (`/messages`, sorted by
+  most recent activity, with an unread-count badge per thread), a chat
+  interface (`/messages/<id>`), and `/messages/start/<booking_id>` which
+  finds-or-creates the conversation for a booking.
+- **Messaging only opens up once a booking is accepted** — same rule as
+  the phone-number reveal from Phase 6 — so a customer can't message a
+  professional (or vice versa) before there's an actual working
+  relationship. "Message" buttons appear on the booking detail pages
+  alongside the contact info, once unlocked.
+- **Basic real-time updates via polling, not websockets**: the chat page
+  polls a small JSON endpoint (`/messages/<id>/poll?since=<id>`) every 4
+  seconds for newer messages and appends them live via vanilla JS
+  (`app/static/js/chat.js`) — appropriate for MVP message volume without
+  adding Flask-SocketIO/eventlet to the deployment.
+- New messages create a `Notification` for the recipient too (reusing the
+  Phase 6 system), and a separate envelope icon (distinct from the
+  notification bell) shows an unread-message badge in the navbar and on
+  both dashboards, replacing the last remaining placeholder "0" stat.
+- Extended the Pytest suite to cover the accepted-only messaging gate,
+  sending/receiving, read-state on view, the poll endpoint returning only
+  messages newer than a given id, and cross-account access checks
+  (60 tests total).
+
+**Two real bugs caught while writing tests, not the app being wrong on
+first try:**
+1. `convo.updated_at = message.created_at` read `created_at` off a
+   `Message` object that hadn't been flushed yet, so the column default
+   hadn't run — it was still `None`, which violated the `NOT NULL`
+   constraint on `updated_at` the moment the row was touched. Fixed by
+   setting the timestamp explicitly instead of relying on an unflushed
+   object's default.
+2. Several test helpers registered a second account without logging out
+   the first — since the registration routes redirect an already-
+   authenticated user straight to their dashboard instead of processing
+   the form, the second account was silently never created, and later
+   assertions failed confusingly far from the real cause. Fixed by adding
+   the missing `logout` calls; worth noting as a pattern for future test
+   helpers in this codebase.

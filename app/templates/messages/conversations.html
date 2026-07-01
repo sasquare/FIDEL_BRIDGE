@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Messages — FidelBridge{% endblock %}
+
+{% block content %}
+<section class="section !max-w-2xl">
+  <span class="eyebrow">Messages</span>
+  <h1 class="mt-3 text-3xl font-extrabold text-brand-900">Conversations</h1>
+
+  {% if conversations %}
+  <div class="mt-8 flex flex-col gap-3">
+    {% for convo in conversations %}
+    {% set other = convo.other_participant(current_user) %}
+    {% set unread = convo.messages|selectattr("sender_id", "ne", current_user.id)|selectattr("is_read", "eq", False)|list|length %}
+    {% set last_message = convo.messages[-1] if convo.messages else None %}
+    <a href="{{ url_for('messages.conversation', conversation_id=convo.id) }}" class="card flex items-center gap-4 !p-5">
+      <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand-100 text-lg font-bold text-brand-700">
+        {{ other.full_name[0]|upper }}
+      </span>
+      <div class="min-w-0 flex-1">
+        <div class="flex items-center justify-between gap-2">
+          <p class="truncate font-semibold text-brand-900">{{ other.full_name }}</p>
+          {% if last_message %}
+          <span class="shrink-0 text-xs text-slate-400">{{ last_message.created_at.strftime("%d %b") }}</span>
+          {% endif %}
+        </div>
+        {% if convo.booking %}
+        <p class="truncate text-xs text-slate-400">Re: {{ convo.booking.title }}</p>
+        {% endif %}
+        <p class="mt-1 truncate text-sm {{ 'font-semibold text-slate-700' if unread else 'text-slate-500' }}">
+          {{ last_message.body if last_message else "No messages yet." }}
+        </p>
+      </div>
+      {% if unread %}
+      <span class="flex h-6 min-w-[1.5rem] shrink-0 items-center justify-center rounded-full bg-brand-700 px-1.5 text-xs font-bold text-white">
+        {{ unread }}
+      </span>
+      {% endif %}
+    </a>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="mt-14 flex flex-col items-center text-center">
+    <span class="flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 text-slate-400">
+      <svg class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" />
+      </svg>
+    </span>
+    <h2 class="mt-4 text-lg font-semibold text-brand-900">No conversations yet</h2>
+    <p class="mt-2 max-w-sm text-sm text-slate-500">
+      Once a booking is accepted, you can message the other party from the booking's detail page.
+    </p>
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

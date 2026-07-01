@@ -14,7 +14,8 @@ FIDEL_BRIDGE/
 │   │   ├── customer/             # Customer dashboard, profile, bookings (protected, role=customer)
 │   │   ├── professional/         # Professional dashboard, profile, bookings (protected, role=professional)
 │   │   ├── corporate/            # Corporate dashboard (protected, role=corporate)
-│   │   └── notifications/        # Notification inbox (protected, any authenticated role)
+│   │   ├── notifications/        # Notification inbox (protected, any authenticated role)
+│   │   └── messages/              # Conversations + chat (protected, any authenticated role)
 │   │       ├── __init__.py
 │   │       └── routes.py
 │   ├── forms/
@@ -22,7 +23,8 @@ FIDEL_BRIDGE/
 │   │   ├── customer.py        # Customer profile edit form
 │   │   ├── professional.py    # Profile/skill/portfolio/verification-upload forms
 │   │   ├── corporate.py       # Company profile + service-request forms
-│   │   └── booking.py         # Booking request form
+│   │   ├── booking.py         # Booking request form
+│   │   └── message.py         # Chat message form
 │   ├── models/
 │   │   ├── __init__.py        # Imports every model so Flask-Migrate sees them
 │   │   ├── roles.py           # Role constants (customer/professional/corporate/admin)
@@ -36,12 +38,15 @@ FIDEL_BRIDGE/
 │   │   ├── portfolio.py       # PortfolioItem (1:many from ProfessionalProfile)
 │   │   ├── verification.py    # Verification (uploaded doc + pending/approved/rejected status)
 │   │   ├── booking.py         # Booking (customer <-> professional job request + status lifecycle)
-│   │   └── notification.py    # Notification (per-user, optionally linked to a booking)
+│   │   ├── notification.py    # Notification (per-user, optionally linked to a booking)
+│   │   ├── conversation.py    # Conversation (two users, one per accepted booking)
+│   │   └── message.py         # Message (belongs to a Conversation)
 │   ├── utils/
 │   │   ├── decorators.py      # role_required(*roles) route decorator
 │   │   ├── auth_helpers.py    # dashboard_url_for(user) role -> dashboard redirect
 │   │   ├── uploads.py         # Secure file upload saving (random filenames, extension allow-list)
-│   │   └── notifications.py   # notify(user, message, link) helper
+│   │   ├── notifications.py   # notify(user, message, link) helper
+│   │   └── messaging.py       # unread_message_count(user) helper
 │   ├── templates/
 │   │   ├── base.html          # Shared HTML shell (head, nav, flash messages, footer, scripts)
 │   │   ├── partials/
@@ -88,12 +93,16 @@ FIDEL_BRIDGE/
 │   │   │   ├── requests.html      # List with status-filter tabs
 │   │   │   ├── request_form.html
 │   │   │   └── request_detail.html
-│   │   └── notifications/
-│   │       └── index.html         # Notification inbox, mark-one/mark-all read
+│   │   ├── notifications/
+│   │   │   └── index.html         # Notification inbox, mark-one/mark-all read
+│   │   └── messages/
+│   │       ├── conversations.html # List, sorted by recency, with unread badges
+│   │       └── conversation.html  # Chat thread + send form + polling script
 │   └── static/
 │       ├── src/input.css      # Tailwind source (edit this)
 │       ├── css/output.css     # Compiled Tailwind CSS (generated, do not edit)
 │       ├── js/main.js         # Site JavaScript
+│       ├── js/chat.js         # Polls for new chat messages every 4s (no websockets)
 │       ├── images/            # Static images / favicon
 │       ├── vendor/alpinejs/   # Self-hosted Alpine.js (generated, do not edit)
 │       ├── fonts/inter/       # Self-hosted Inter font files (generated, do not edit)
@@ -181,6 +190,14 @@ FIDEL_BRIDGE/
   in-progress/completed themselves — that's fulfillment/admin territory
   (Phase 9). The cancel route 400s if called on a non-pending request
   instead of silently allowing it.
+- **Messaging is gated on an accepted booking**, same rule as the phone
+  reveal — `Conversation.booking_id` is unique, so each job gets at most
+  one thread, found-or-created via `/messages/start/<booking_id>`.
+- **Polling instead of websockets for "real-time" chat.** A 4-second poll
+  against a small JSON endpoint is enough for expected MVP message
+  volume and avoids adding Flask-SocketIO/eventlet (and the deployment
+  complexity that brings on Render) for a feature that doesn't need
+  sub-second latency yet.
 - **SQLite now, PostgreSQL later**: `DATABASE_URL` is read from the
   environment, so switching to PostgreSQL in production is a config change,
   not a code change.

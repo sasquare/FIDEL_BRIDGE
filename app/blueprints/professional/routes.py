@@ -19,6 +19,7 @@ from app.models.portfolio import PortfolioItem
 from app.models.skill import Skill
 from app.models.verification import Verification
 from app.utils.decorators import role_required
+from app.utils.messaging import unread_message_count
 from app.utils.notifications import notify
 from app.utils.uploads import save_portfolio_image, save_verification_document
 
@@ -28,6 +29,7 @@ def _sidebar_items():
         {"key": "dashboard", "label": "Dashboard", "url": url_for("professional.dashboard")},
         {"key": "profile", "label": "My Profile", "url": url_for("professional.profile")},
         {"key": "bookings", "label": "Job Requests", "url": url_for("professional.bookings")},
+        {"key": "messages", "label": "Messages", "url": url_for("messages.conversations")},
         {"key": "skills", "label": "Skills", "url": url_for("professional.skills")},
         {"key": "portfolio", "label": "Portfolio", "url": url_for("professional.portfolio")},
         {"key": "verification", "label": "Verification", "url": url_for("professional.verification")},
@@ -51,6 +53,7 @@ def dashboard():
     all_bookings = professional.bookings
     stats = {
         "new_requests": sum(1 for b in all_bookings if b.status == STATUS_PENDING),
+        "unread_messages": unread_message_count(current_user),
     }
     return render_template(
         "professional/dashboard.html",

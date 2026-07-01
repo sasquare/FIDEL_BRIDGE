@@ -59,6 +59,17 @@ def register_context_processors(app):
         count = Notification.query.filter_by(user_id=current_user.id, is_read=False).count()
         return {"unread_notification_count": count}
 
+    @app.context_processor
+    def inject_unread_message_count():
+        from flask_login import current_user
+
+        if not current_user.is_authenticated:
+            return {"unread_message_count": 0}
+
+        from app.utils.messaging import unread_message_count
+
+        return {"unread_message_count": unread_message_count(current_user)}
+
 
 def register_blueprints(app):
     from app.blueprints.auth import auth_bp
@@ -66,6 +77,7 @@ def register_blueprints(app):
     from app.blueprints.corporate import corporate_bp
     from app.blueprints.customer import customer_bp
     from app.blueprints.main import main_bp
+    from app.blueprints.messages import messages_bp
     from app.blueprints.notifications import notifications_bp
     from app.blueprints.professional import professional_bp
 
@@ -76,6 +88,7 @@ def register_blueprints(app):
     app.register_blueprint(professional_bp)
     app.register_blueprint(corporate_bp)
     app.register_blueprint(notifications_bp)
+    app.register_blueprint(messages_bp)
 
 
 def register_cli_commands(app):

@@ -16,7 +16,7 @@
   Complete your profile to appear higher in search and get discovered by more customers.
 </p>
 
-<div class="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+<div class="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
   <div class="card !p-6">
     <p class="text-sm font-semibold text-slate-500">Verification Status</p>
     <p class="mt-2 text-lg font-bold {{ 'text-emerald-600' if professional.is_verified else 'text-amber-600' }}">
@@ -27,6 +27,10 @@
     <p class="text-sm font-semibold text-slate-500">New Job Requests</p>
     <p class="mt-2 text-3xl font-extrabold text-brand-900">{{ stats.new_requests }}</p>
   </div>
+  <a href="{{ url_for('messages.conversations') }}" class="card !p-6">
+    <p class="text-sm font-semibold text-slate-500">Unread Messages</p>
+    <p class="mt-2 text-3xl font-extrabold text-brand-900">{{ stats.unread_messages }}</p>
+  </a>
   <div class="card !p-6">
     <p class="text-sm font-semibold text-slate-500">Average Rating</p>
     <p class="mt-2 text-3xl font-extrabold text-brand-900">&mdash;</p>

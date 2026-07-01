@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}{{ conversation.other_participant(current_user).full_name }} — Messages — FidelBridge{% endblock %}
+
+{% block content %}
+<section class="section !max-w-2xl">
+  <a href="{{ url_for('messages.conversations') }}" class="text-sm font-semibold text-slate-500 hover:text-brand-700">&larr; Back to messages</a>
+
+  <div class="card mt-6 flex h-[70vh] flex-col overflow-hidden !p-0">
+    <div class="flex items-center gap-3 border-b border-slate-100 p-5">
+      <span class="flex h-10 w-10 items-center justify-center rounded-full bg-brand-100 font-bold text-brand-700">
+        {{ conversation.other_participant(current_user).full_name[0]|upper }}
+      </span>
+      <div>
+        <p class="font-semibold text-brand-900">{{ conversation.other_participant(current_user).full_name }}</p>
+        {% if conversation.booking %}
+        <a
+          href="{{ url_for('customer.booking_detail', booking_id=conversation.booking.id) if current_user.role == 'customer' else url_for('professional.booking_detail', booking_id=conversation.booking.id) }}"
+          class="text-xs text-brand-700 hover:underline"
+        >
+          Re: {{ conversation.booking.title }}
+        </a>
+        {% endif %}
+      </div>
+    </div>
+
+    <div id="message-list" class="flex-1 space-y-3 overflow-y-auto p-5" data-last-id="{{ conversation.messages[-1].id if conversation.messages else 0 }}">
+      {% for message in conversation.messages %}
+      <div class="flex {{ 'justify-end' if message.sender_id == current_user.id else 'justify-start' }}">
+        <div class="max-w-[75%] rounded-2xl px-4 py-2.5 text-sm
+          {{ 'bg-brand-700 text-white' if message.sender_id == current_user.id else 'bg-slate-100 text-slate-700' }}">
+          <p class="whitespace-pre-line">{{ message.body }}</p>
+          <p class="mt-1 text-right text-[10px] {{ 'text-brand-200' if message.sender_id == current_user.id else 'text-slate-400' }}">
+            {{ message.created_at.strftime("%d %b, %I:%M %p") }}
+          </p>
+        </div>
+      </div>
+      {% else %}
+      <p class="py-10 text-center text-sm italic text-slate-400">
+        No messages yet. Say hello to get things started.
+      </p>
+      {% endfor %}
+    </div>
+
+    <form method="POST" class="flex items-end gap-3 border-t border-slate-100 p-4">
+      {{ form.hidden_tag() }}
+      {{ form.body(class_="flex-1 resize-none rounded-xl border border-slate-200 px-4 py-2.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-500", rows="2", placeholder="Type a message...") }}
+      {{ form.submit(class_="btn-primary shrink-0") }}
+    </form>
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/chat.js') }}" data-poll-url="{{ url_for('messages.poll', conversation_id=conversation.id) }}"></script>
+{% endblock %}

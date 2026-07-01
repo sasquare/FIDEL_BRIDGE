@@ -21,10 +21,10 @@
     <p class="text-sm font-semibold text-slate-500">Completed Jobs</p>
     <p class="mt-2 text-3xl font-extrabold text-brand-900">{{ stats.completed }}</p>
   </div>
-  <div class="card !p-6">
+  <a href="{{ url_for('messages.conversations') }}" class="card !p-6">
     <p class="text-sm font-semibold text-slate-500">Unread Messages</p>
-    <p class="mt-2 text-3xl font-extrabold text-brand-900">0</p>
-  </div>
+    <p class="mt-2 text-3xl font-extrabold text-brand-900">{{ stats.unread_messages }}</p>
+  </a>
 </div>
 
 <div class="mt-10">
