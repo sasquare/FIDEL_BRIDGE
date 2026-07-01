@@ -1,0 +1,27 @@
+{% extends "dashboard/_shell.html" %}
+{% from "macros/forms.html" import render_field, render_form_errors %}
+{% block title %}New Service Request — FidelBridge{% endblock %}
+
+{% block dashboard_content %}
+<span class="eyebrow">Requests</span>
+<h1 class="mt-3 text-3xl font-extrabold text-brand-900">New Service Request</h1>
+<p class="mt-3 max-w-xl text-slate-600">
+  Tell us what you need — we'll match you with verified professionals or vendors.
+</p>
+
+<div class="card mt-8 max-w-2xl !p-8">
+  <form method="POST" novalidate class="flex flex-col gap-5">
+    {{ form.hidden_tag() }}
+    {{ render_form_errors(form) }}
+    {{ render_field(form.request_type) }}
+    {{ render_field(form.title) }}
+    {{ render_field(form.description) }}
+    {{ render_field(form.location) }}
+    <div class="grid gap-5 sm:grid-cols-2">
+      {{ render_field(form.budget_naira) }}
+      {{ render_field(form.preferred_date) }}
+    </div>
+    {{ form.submit(class_="btn-primary mt-2 w-full sm:w-auto") }}
+  </form>
+</div>
+{% endblock %}

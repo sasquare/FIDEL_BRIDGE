@@ -110,3 +110,38 @@ has an `available_days` attribute (the raw stored string) — every checkbox
 rendered unchecked on page reload even though the correct value was saved to
 the database. Fixed by building the form from explicit keyword arguments
 instead of `obj=`.
+
+## Phase 5 — Corporate Dashboard & Service Requests
+
+- Added a `CorporateRequest` model (`request_type`: procurement / facility
+  management / janitorial / other; `status`: pending / in_progress /
+  completed / cancelled) linked from `CorporateProfile`, plus
+  address/city/state fields on `CorporateProfile` itself.
+- Added a company profile edit page (`/corporate/profile`).
+- Rebuilt the corporate dashboard on the shared shell with request-count
+  stats (total/pending/in-progress/completed), three "Request a Service"
+  quick-create cards (one per type), and a recent-requests list.
+- Added a full request lifecycle for corporates: submit
+  (`/corporate/requests/new`, with the type pre-selected when reached via a
+  quick-create card), list with status-filter tabs
+  (`/corporate/requests`), view details, and cancel a still-pending request.
+  Fulfillment/assignment is admin territory (Phase 9) — corporates can only
+  cancel, not mark in-progress/completed.
+- Added a 400 error page (used when a non-pending request is cancelled).
+- Extended the Pytest suite to cover profile editing, request submission,
+  status filtering, cancellation (including that a non-pending request
+  can't be cancelled, and that one corporate can't view or cancel another's
+  request), and role isolation (40 tests total).
+
+**Bug caught while writing tests, not the app itself:** the `app` pytest
+fixture kept one Flask app context open for an entire test (`yield` sitting
+inside `with application.app_context(): ...`). Because Flask reuses an
+already-active app context instead of pushing a new one, every
+`client.get()/post()` call in a test shared a single SQLAlchemy session —
+so a direct DB write made via a separate `with app.app_context()` block
+was invisible to a later `client.get()` in the same test, masked by that
+shared session's stale identity-map cache. This didn't affect the running
+app (real requests always get a fresh context and session), but it could
+have hidden real bugs in future tests. Fixed by no longer holding an app
+context open for the test body, so the test client's requests behave
+exactly like production requests.

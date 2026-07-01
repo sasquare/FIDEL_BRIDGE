@@ -75,6 +75,10 @@ def register_cli_commands(app):
 
 
 def register_error_handlers(app):
+    @app.errorhandler(400)
+    def bad_request(error):
+        return render_template("errors/400.html"), 400
+
     @app.errorhandler(403)
     def forbidden(error):
         return render_template("errors/403.html"), 403

@@ -1,0 +1,25 @@
+{% extends "dashboard/_shell.html" %}
+{% from "macros/forms.html" import render_field, render_form_errors %}
+{% block title %}Company Profile — FidelBridge{% endblock %}
+
+{% block dashboard_content %}
+<span class="eyebrow">Account Settings</span>
+<h1 class="mt-3 text-3xl font-extrabold text-brand-900">Company Profile</h1>
+<p class="mt-3 max-w-xl text-slate-600">Keep your company details up to date.</p>
+
+<div class="card mt-8 max-w-xl !p-8">
+  <form method="POST" novalidate class="flex flex-col gap-5">
+    {{ form.hidden_tag() }}
+    {{ render_form_errors(form) }}
+    {{ render_field(form.company_name) }}
+    {{ render_field(form.rc_number) }}
+    {{ render_field(form.industry) }}
+    {{ render_field(form.address) }}
+    <div class="grid gap-5 sm:grid-cols-2">
+      {{ render_field(form.city) }}
+      {{ render_field(form.state) }}
+    </div>
+    {{ form.submit(class_="btn-primary mt-2 w-full sm:w-auto") }}
+  </form>
+</div>
+{% endblock %}

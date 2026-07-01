@@ -1,28 +1,92 @@
-{% extends "base.html" %}
+{% extends "dashboard/_shell.html" %}
 {% block title %}Corporate Dashboard — FidelBridge{% endblock %}
 
-{% block content %}
-<section class="section">
-  <span class="eyebrow">Corporate Dashboard</span>
-  <h1 class="mt-3 text-3xl font-extrabold text-brand-900">Welcome, {{ user.corporate_profile.company_name }}</h1>
-  <p class="mt-3 max-w-xl text-slate-600">
-    Facility management, procurement and janitorial service requests will appear here as
-    they're built out in the next phases.
-  </p>
+{% block dashboard_content %}
+<span class="eyebrow">Corporate Dashboard</span>
+<h1 class="mt-3 text-3xl font-extrabold text-brand-900">Welcome, {{ corporate.company_name }}</h1>
+<p class="mt-3 max-w-xl text-slate-600">
+  Request facility management, procurement, or janitorial services and track them all
+  from one place.
+</p>
 
-  <div class="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-    <div class="card !p-6">
-      <p class="text-sm font-semibold text-slate-500">Open Requests</p>
-      <p class="mt-2 text-3xl font-extrabold text-brand-900">0</p>
-    </div>
-    <div class="card !p-6">
-      <p class="text-sm font-semibold text-slate-500">Active Vendors</p>
-      <p class="mt-2 text-3xl font-extrabold text-brand-900">0</p>
-    </div>
-    <div class="card !p-6">
-      <p class="text-sm font-semibold text-slate-500">Completed Requests</p>
-      <p class="mt-2 text-3xl font-extrabold text-brand-900">0</p>
-    </div>
+<div class="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+  <div class="card !p-6">
+    <p class="text-sm font-semibold text-slate-500">Total Requests</p>
+    <p class="mt-2 text-3xl font-extrabold text-brand-900">{{ stats.total }}</p>
   </div>
-</section>
+  <div class="card !p-6">
+    <p class="text-sm font-semibold text-slate-500">Pending</p>
+    <p class="mt-2 text-3xl font-extrabold text-amber-600">{{ stats.pending }}</p>
+  </div>
+  <div class="card !p-6">
+    <p class="text-sm font-semibold text-slate-500">In Progress</p>
+    <p class="mt-2 text-3xl font-extrabold text-brand-700">{{ stats.in_progress }}</p>
+  </div>
+  <div class="card !p-6">
+    <p class="text-sm font-semibold text-slate-500">Completed</p>
+    <p class="mt-2 text-3xl font-extrabold text-emerald-600">{{ stats.completed }}</p>
+  </div>
+</div>
+
+<div class="mt-10">
+  <h2 class="text-lg font-semibold text-brand-900">Request a Service</h2>
+  <div class="mt-4 grid gap-4 sm:grid-cols-3">
+    <a href="{{ url_for('corporate.new_request', type='procurement') }}" class="card flex flex-col !p-6">
+      <span class="flex h-10 w-10 items-center justify-center rounded-full bg-brand-50 text-brand-700">
+        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 2.25L3 6.75m6-4.5l6 4.5M9 2.25v18M3 6.75l6-4.5m0 0l6 4.5m0 0l6-4.5M9 6.75h6m-6 4.5h6m-6 4.5h6" />
+        </svg>
+      </span>
+      <p class="mt-4 font-semibold text-brand-900">Procurement</p>
+      <p class="mt-1 text-sm text-slate-500">Source supplies and equipment.</p>
+    </a>
+    <a href="{{ url_for('corporate.new_request', type='facility_management') }}" class="card flex flex-col !p-6">
+      <span class="flex h-10 w-10 items-center justify-center rounded-full bg-brand-50 text-brand-700">
+        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15" />
+        </svg>
+      </span>
+      <p class="mt-4 font-semibold text-brand-900">Facility Management</p>
+      <p class="mt-1 text-sm text-slate-500">Maintenance and building upkeep.</p>
+    </a>
+    <a href="{{ url_for('corporate.new_request', type='janitorial') }}" class="card flex flex-col !p-6">
+      <span class="flex h-10 w-10 items-center justify-center rounded-full bg-brand-50 text-brand-700">
+        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+        </svg>
+      </span>
+      <p class="mt-4 font-semibold text-brand-900">Janitorial</p>
+      <p class="mt-1 text-sm text-slate-500">Recurring or one-off cleaning.</p>
+    </a>
+  </div>
+</div>
+
+<div class="mt-10">
+  <div class="flex items-center justify-between">
+    <h2 class="text-lg font-semibold text-brand-900">Recent Requests</h2>
+    <a href="{{ url_for('corporate.requests') }}" class="text-sm font-semibold text-brand-700 hover:underline">View all &rarr;</a>
+  </div>
+
+  {% if recent_requests %}
+  <div class="mt-4 flex flex-col gap-3">
+    {% for req in recent_requests %}
+    <a href="{{ url_for('corporate.request_detail', request_id=req.id) }}" class="card flex items-center justify-between !p-4">
+      <div>
+        <p class="text-sm font-semibold text-brand-900">{{ req.title }}</p>
+        <p class="text-xs text-slate-500">{{ req.type_label }} &middot; {{ req.created_at.strftime("%d %b %Y") }}</p>
+      </div>
+      <span class="rounded-full px-3 py-1 text-xs font-semibold
+        {{ 'bg-emerald-50 text-emerald-700' if req.status == 'completed'
+           else 'bg-red-50 text-red-700' if req.status == 'cancelled'
+           else 'bg-brand-50 text-brand-700' if req.status == 'in_progress'
+           else 'bg-amber-50 text-amber-700' }}">
+        {{ req.status_label }}
+      </span>
+    </a>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="mt-4 text-sm italic text-slate-400">No requests yet. Use the cards above to submit your first one.</p>
+  {% endif %}
+</div>
 {% endblock %}

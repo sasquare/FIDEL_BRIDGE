@@ -117,6 +117,17 @@ Visit **http://127.0.0.1:5000** — you should see the FidelBridge landing page.
   professional's verification document URL
   (`/professional/verification/<id>/download`) — it should 404, not serve
   the file.
+- Register a Corporate account, and from `/corporate/dashboard`, click each
+  of the three "Request a Service" cards (Procurement / Facility Management
+  / Janitorial) and confirm the request type is pre-selected on the form.
+- Submit a request, confirm it shows "Pending" on `/corporate/requests`,
+  and that the status-filter tabs (Pending/In Progress/Completed/Cancelled)
+  correctly show/hide it.
+- Open the request's detail page and click "Cancel this request" — the
+  status should change to "Cancelled" and the cancel option should
+  disappear.
+- Log in as a *different* corporate account and try to open the first
+  corporate's request detail URL directly — it should 404.
 
 ## Running tests
 
@@ -124,9 +135,9 @@ Visit **http://127.0.0.1:5000** — you should see the FidelBridge landing page.
 pytest
 ```
 
-All tests should pass (30 as of Phase 4, across `tests/test_landing_page.py`,
-`tests/test_auth.py`, `tests/test_browse.py`, `tests/test_customer.py`, and
-`tests/test_professional.py`).
+All tests should pass (40 as of Phase 5, across `tests/test_landing_page.py`,
+`tests/test_auth.py`, `tests/test_browse.py`, `tests/test_customer.py`,
+`tests/test_professional.py`, and `tests/test_corporate.py`).
 
 ## Common Errors & Troubleshooting
 

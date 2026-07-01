@@ -17,8 +17,10 @@ This repository is being built in phases.
 - **Phase 3:** customer dashboard & discovery — customer profile editing,
   service categories, professional search/filtering, and public
   professional profile pages.
-- **Phase 4 (this phase):** professional dashboard — complete profile,
-  skills, portfolio, availability, and verification document upload.
+- **Phase 4:** professional dashboard — complete profile, skills, portfolio,
+  availability, and verification document upload.
+- **Phase 5 (this phase):** corporate dashboard — company profile, and
+  procurement / facility management / janitorial service requests.
 
 ## Tech Stack
 

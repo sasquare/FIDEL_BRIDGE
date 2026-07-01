@@ -6,6 +6,7 @@ module first imports `app.models`.
 """
 from app.models.category import Category  # noqa: F401
 from app.models.corporate import CorporateProfile  # noqa: F401
+from app.models.corporate_request import CorporateRequest  # noqa: F401
 from app.models.customer import CustomerProfile  # noqa: F401
 from app.models.portfolio import PortfolioItem  # noqa: F401
 from app.models.professional import ProfessionalProfile  # noqa: F401

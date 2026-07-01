@@ -19,7 +19,8 @@ FIDEL_BRIDGE/
 │   ├── forms/
 │   │   ├── auth.py            # Flask-WTF registration/login forms + validation
 │   │   ├── customer.py        # Customer profile edit form
-│   │   └── professional.py    # Profile/skill/portfolio/verification-upload forms
+│   │   ├── professional.py    # Profile/skill/portfolio/verification-upload forms
+│   │   └── corporate.py       # Company profile + service-request forms
 │   ├── models/
 │   │   ├── __init__.py        # Imports every model so Flask-Migrate sees them
 │   │   ├── roles.py           # Role constants (customer/professional/corporate/admin)
@@ -27,6 +28,7 @@ FIDEL_BRIDGE/
 │   │   ├── customer.py        # CustomerProfile (1:1 with User)
 │   │   ├── professional.py    # ProfessionalProfile (1:1 with User, linked to Category)
 │   │   ├── corporate.py       # CorporateProfile (1:1 with User)
+│   │   ├── corporate_request.py  # CorporateRequest (1:many from CorporateProfile)
 │   │   ├── category.py        # Category (service categories: Electricians, Plumbers, ...)
 │   │   ├── skill.py           # Skill (1:many from ProfessionalProfile)
 │   │   ├── portfolio.py       # PortfolioItem (1:many from ProfessionalProfile)
@@ -70,7 +72,12 @@ FIDEL_BRIDGE/
 │   │   │   ├── skills.html
 │   │   │   ├── portfolio.html
 │   │   │   └── verification.html
-│   │   └── corporate/dashboard.html
+│   │   └── corporate/
+│   │       ├── dashboard.html     # Stats + quick-create cards + recent requests
+│   │       ├── profile.html
+│   │       ├── requests.html      # List with status-filter tabs
+│   │       ├── request_form.html
+│   │       └── request_detail.html
 │   └── static/
 │       ├── src/input.css      # Tailwind source (edit this)
 │       ├── css/output.css     # Compiled Tailwind CSS (generated, do not edit)
@@ -141,6 +148,15 @@ FIDEL_BRIDGE/
   a booking-calendar table — right-sized for "customers can see roughly
   when I work," with an actual scheduling system deferred to the booking
   phase if the product needs it later.
+- **One `CorporateRequest` model with a `request_type` column**, not three
+  separate tables for procurement/facility-management/janitorial. The three
+  request types share every field (title, description, location, budget,
+  preferred date, status) — only the label differs — so a single table with
+  a type discriminator avoids duplicating the same schema three times.
+- **Corporates can only cancel a pending request**, not move it to
+  in-progress/completed themselves — that's fulfillment/admin territory
+  (Phase 9). The cancel route 400s if called on a non-pending request
+  instead of silently allowing it.
 - **SQLite now, PostgreSQL later**: `DATABASE_URL` is read from the
   environment, so switching to PostgreSQL in production is a config change,
   not a code change.
