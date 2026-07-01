@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Page Not Found — FidelBridge{% endblock %}
+{% block content %}
+<section class="section flex flex-col items-center py-32 text-center">
+  <span class="eyebrow">Error 404</span>
+  <h1 class="mt-3 text-4xl font-extrabold text-brand-900">This page took a detour.</h1>
+  <p class="mt-4 max-w-md text-slate-600">
+    The page you're looking for doesn't exist or may have moved.
+  </p>
+  <a href="{{ url_for('main.index') }}" class="btn-primary mt-8">Back to Home</a>
+</section>
+{% endblock %}

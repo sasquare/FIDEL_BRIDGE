@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}FidelBridge — Bridging the Trust Gap{% endblock %}</title>
+  <meta name="description" content="{% block description %}FidelBridge connects Nigerian customers, artisans, professionals and corporate organizations on one trusted, verified service marketplace.{% endblock %}" />
+
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='images/favicon.svg') }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/output.css') }}" />
+
+  {% block extra_head %}{% endblock %}
+</head>
+<body class="flex min-h-screen flex-col font-sans">
+  {% include "partials/navbar.html" %}
+
+  <main class="flex-1">
+    {% block content %}{% endblock %}
+  </main>
+
+  {% include "partials/footer.html" %}
+
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+  <script defer src="{{ url_for('static', filename='vendor/alpinejs/alpine.min.js') }}"></script>
+  {% block extra_scripts %}{% endblock %}
+</body>
+</html>

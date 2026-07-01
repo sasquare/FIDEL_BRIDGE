@@ -1,0 +1,52 @@
+<header
+  x-data="{ mobileOpen: false }"
+  class="sticky top-0 z-50 border-b border-slate-100 bg-white/90 backdrop-blur"
+>
+  <nav class="section flex items-center justify-between !py-4">
+    <a href="{{ url_for('main.index') }}" class="flex items-center gap-2">
+      <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-700 text-lg font-extrabold text-white">
+        F
+      </span>
+      <span class="text-lg font-extrabold tracking-tight text-brand-900">
+        Fidel<span class="text-amber-500">Bridge</span>
+      </span>
+    </a>
+
+    <div class="hidden items-center gap-8 lg:flex">
+      <a href="#services" class="text-sm font-medium text-slate-600 transition hover:text-brand-700">Services</a>
+      <a href="#corporate" class="text-sm font-medium text-slate-600 transition hover:text-brand-700">Corporate</a>
+      <a href="#how-it-works" class="text-sm font-medium text-slate-600 transition hover:text-brand-700">How It Works</a>
+      <a href="#become-a-professional" class="text-sm font-medium text-slate-600 transition hover:text-brand-700">Become a Professional</a>
+    </div>
+
+    <div class="hidden items-center gap-3 lg:flex">
+      <a href="#" class="text-sm font-semibold text-slate-700 transition hover:text-brand-700">Log In</a>
+      <a href="#" class="btn-primary !px-5 !py-2.5">Get Started</a>
+    </div>
+
+    <button
+      @click="mobileOpen = !mobileOpen"
+      class="flex h-10 w-10 items-center justify-center rounded-lg text-slate-700 lg:hidden"
+      aria-label="Toggle navigation menu"
+    >
+      <svg x-show="!mobileOpen" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+      </svg>
+      <svg x-show="mobileOpen" x-cloak class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+      </svg>
+    </button>
+  </nav>
+
+  <div x-show="mobileOpen" x-cloak x-transition class="border-t border-slate-100 bg-white px-6 py-4 lg:hidden">
+    <div class="flex flex-col gap-4">
+      <a href="#services" class="text-sm font-medium text-slate-700">Services</a>
+      <a href="#corporate" class="text-sm font-medium text-slate-700">Corporate</a>
+      <a href="#how-it-works" class="text-sm font-medium text-slate-700">How It Works</a>
+      <a href="#become-a-professional" class="text-sm font-medium text-slate-700">Become a Professional</a>
+      <hr class="border-slate-100" />
+      <a href="#" class="text-sm font-semibold text-slate-700">Log In</a>
+      <a href="#" class="btn-primary w-full">Get Started</a>
+    </div>
+  </div>
+</header>
