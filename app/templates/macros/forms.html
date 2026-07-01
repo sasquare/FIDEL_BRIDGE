@@ -1,0 +1,26 @@
+{% macro render_form_errors(form) %}
+  {% if form.csrf_token is defined and form.csrf_token.errors %}
+    <div class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+      Your session expired. Please try submitting the form again.
+    </div>
+  {% endif %}
+{% endmacro %}
+
+{% macro render_field(field) %}
+  <div class="flex flex-col gap-1.5">
+    <label for="{{ field.id }}" class="text-sm font-medium text-slate-700">{{ field.label.text }}</label>
+    {{ field(class_="w-full rounded-xl border px-4 py-2.5 text-sm text-slate-900 shadow-sm transition
+        placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-1
+        " ~ ("border-red-300" if field.errors else "border-slate-200")) }}
+    {% for error in field.errors %}
+      <p class="text-xs font-medium text-red-600">{{ error }}</p>
+    {% endfor %}
+  </div>
+{% endmacro %}
+
+{% macro render_checkbox(field) %}
+  <div class="flex items-center gap-2">
+    {{ field(class_="h-4 w-4 rounded border-slate-300 text-brand-700 focus:ring-brand-500") }}
+    <label for="{{ field.id }}" class="text-sm text-slate-600">{{ field.label.text }}</label>
+  </div>
+{% endmacro %}

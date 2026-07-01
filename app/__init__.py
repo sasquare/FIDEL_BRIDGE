@@ -5,7 +5,7 @@ from datetime import datetime
 from flask import Flask, render_template
 
 from app.config import config
-from app.extensions import db, migrate
+from app.extensions import db, login_manager, migrate
 
 
 def create_app(config_name=None):
@@ -20,6 +20,14 @@ def create_app(config_name=None):
     db.init_app(app)
     migrate.init_app(app, db)
 
+    login_manager.init_app(app)
+    login_manager.login_view = "auth.login"
+    login_manager.login_message = "Please log in to access this page."
+    login_manager.login_message_category = "error"
+
+    with app.app_context():
+        from app import models  # noqa: F401  (registers models on the metadata)
+
     register_blueprints(app)
     register_error_handlers(app)
     register_context_processors(app)
@@ -32,14 +40,32 @@ def register_context_processors(app):
     def inject_current_year():
         return {"current_year": datetime.utcnow().year}
 
+    @app.context_processor
+    def inject_dashboard_url():
+        from app.utils.auth_helpers import dashboard_url_for
+
+        return {"dashboard_url_for": dashboard_url_for}
+
 
 def register_blueprints(app):
+    from app.blueprints.auth import auth_bp
+    from app.blueprints.corporate import corporate_bp
+    from app.blueprints.customer import customer_bp
     from app.blueprints.main import main_bp
+    from app.blueprints.professional import professional_bp
 
     app.register_blueprint(main_bp)
+    app.register_blueprint(auth_bp)
+    app.register_blueprint(customer_bp)
+    app.register_blueprint(professional_bp)
+    app.register_blueprint(corporate_bp)
 
 
 def register_error_handlers(app):
+    @app.errorhandler(403)
+    def forbidden(error):
+        return render_template("errors/403.html"), 403
+
     @app.errorhandler(404)
     def not_found(error):
         return render_template("errors/404.html"), 404

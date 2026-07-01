@@ -20,8 +20,8 @@
       </p>
 
       <div class="mt-10 flex flex-col gap-4 sm:flex-row">
-        <a href="#" class="btn-accent">Find a Trusted Professional</a>
-        <a href="#become-a-professional" class="btn-secondary">Join as a Professional</a>
+        <a href="{{ url_for('auth.register_customer') }}" class="btn-accent">Find a Trusted Professional</a>
+        <a href="{{ url_for('auth.register_professional') }}" class="btn-secondary">Join as a Professional</a>
       </div>
 
       <div class="mt-12 grid grid-cols-3 gap-8 border-t border-slate-100 pt-8">
@@ -186,7 +186,7 @@
         request bulk, verified services for your organization and manage everything from
         one corporate dashboard.
       </p>
-      <a href="#" class="btn-accent mt-8">Request Corporate Services</a>
+      <a href="{{ url_for('auth.register_corporate') }}" class="btn-accent mt-8">Request Corporate Services</a>
     </div>
 
     <div class="grid grid-cols-2 gap-4">
@@ -238,8 +238,8 @@
       way to get things done.
     </p>
     <div class="mt-8 flex flex-col justify-center gap-4 sm:flex-row">
-      <a href="#" class="btn-accent">Find a Professional</a>
-      <a href="#" class="btn-secondary !bg-transparent !text-white !border-white/30 hover:!border-white">Join as a Professional</a>
+      <a href="{{ url_for('auth.register_customer') }}" class="btn-accent">Find a Professional</a>
+      <a href="{{ url_for('auth.register_professional') }}" class="btn-secondary !bg-transparent !text-white !border-white/30 hover:!border-white">Join as a Professional</a>
     </div>
   </div>
 </section>

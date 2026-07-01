@@ -20,8 +20,15 @@
     </div>
 
     <div class="hidden items-center gap-3 lg:flex">
-      <a href="#" class="text-sm font-semibold text-slate-700 transition hover:text-brand-700">Log In</a>
-      <a href="#" class="btn-primary !px-5 !py-2.5">Get Started</a>
+      {% if current_user.is_authenticated %}
+        <a href="{{ dashboard_url_for(current_user) }}" class="text-sm font-semibold text-slate-700 transition hover:text-brand-700">
+          Hi, {{ current_user.full_name.split(' ')[0] }}
+        </a>
+        <a href="{{ url_for('auth.logout') }}" class="btn-primary !px-5 !py-2.5">Log Out</a>
+      {% else %}
+        <a href="{{ url_for('auth.login') }}" class="text-sm font-semibold text-slate-700 transition hover:text-brand-700">Log In</a>
+        <a href="{{ url_for('auth.register_choice') }}" class="btn-primary !px-5 !py-2.5">Get Started</a>
+      {% endif %}
     </div>
 
     <button
@@ -45,8 +52,15 @@
       <a href="#how-it-works" class="text-sm font-medium text-slate-700">How It Works</a>
       <a href="#become-a-professional" class="text-sm font-medium text-slate-700">Become a Professional</a>
       <hr class="border-slate-100" />
-      <a href="#" class="text-sm font-semibold text-slate-700">Log In</a>
-      <a href="#" class="btn-primary w-full">Get Started</a>
+      {% if current_user.is_authenticated %}
+        <a href="{{ dashboard_url_for(current_user) }}" class="text-sm font-semibold text-slate-700">
+          Hi, {{ current_user.full_name.split(' ')[0] }}
+        </a>
+        <a href="{{ url_for('auth.logout') }}" class="btn-primary w-full">Log Out</a>
+      {% else %}
+        <a href="{{ url_for('auth.login') }}" class="text-sm font-semibold text-slate-700">Log In</a>
+        <a href="{{ url_for('auth.register_choice') }}" class="btn-primary w-full">Get Started</a>
+      {% endif %}
     </div>
   </div>
 </header>

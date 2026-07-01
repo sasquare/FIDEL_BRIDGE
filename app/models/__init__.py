@@ -1,7 +1,10 @@
 """Database models package.
 
-Models (User, CustomerProfile, ProfessionalProfile, CorporateProfile,
-Category, Service, Booking, Review, etc.) are introduced starting in
-Phase 2 as each feature is built. Kept empty for now so Flask-Migrate
-has a clean, working baseline in Phase 1.
+Importing every model here ensures they are registered on SQLAlchemy's
+metadata before Flask-Migrate compares the schema, regardless of which
+module first imports `app.models`.
 """
+from app.models.corporate import CorporateProfile  # noqa: F401
+from app.models.customer import CustomerProfile  # noqa: F401
+from app.models.professional import ProfessionalProfile  # noqa: F401
+from app.models.user import User  # noqa: F401

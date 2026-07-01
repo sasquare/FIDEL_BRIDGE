@@ -1,4 +1,4 @@
-# Installation Guide — Phase 1
+# Installation Guide
 
 This guide walks through setting up FidelBridge locally from a clean clone.
 
@@ -53,7 +53,16 @@ cp .env.example .env
 
 Open `.env` and set `SECRET_KEY` to a long random string. Never commit `.env`.
 
-## 6. Run the app
+## 6. Create the database
+
+```bash
+flask db upgrade
+```
+
+This creates `instance/fidelbridge.db` with the `users`, `customer_profiles`,
+`professional_profiles`, and `corporate_profiles` tables.
+
+## 7. Run the app
 
 ```bash
 flask run
@@ -70,6 +79,12 @@ Visit **http://127.0.0.1:5000** — you should see the FidelBridge landing page.
 - `http://127.0.0.1:5000/does-not-exist` should show the custom 404 page.
 - Resizing the browser below ~1024px wide should collapse the nav into a
   hamburger menu that opens/closes on click.
+- Visit `/auth/register`, create a Customer account, and confirm you land on
+  `/customer/dashboard` with a "Hi, `<name>`" greeting in the nav.
+- Log out, then log back in at `/auth/login` — you should return to the same
+  dashboard.
+- While logged in as a customer, visiting `/professional/dashboard` directly
+  should show the 403 page.
 
 ## Running tests
 
@@ -77,7 +92,7 @@ Visit **http://127.0.0.1:5000** — you should see the FidelBridge landing page.
 pytest
 ```
 
-Both tests (`tests/test_landing_page.py`) should pass.
+All tests (`tests/test_landing_page.py`, `tests/test_auth.py`) should pass.
 
 ## Common Errors & Troubleshooting
 
@@ -89,3 +104,5 @@ Both tests (`tests/test_landing_page.py`) should pass.
 | `sqlite3.OperationalError: unable to open database file` | `instance/` folder missing permissions | Delete `instance/` and restart `flask run` — the app recreates it automatically |
 | Changes to Tailwind classes don't show up | CSS wasn't rebuilt | Run `npm run build`, or keep `npm run watch` running while you work |
 | `.env` values not taking effect | `.env` not created, or Flask started before it was created | Confirm `.env` exists at the project root and restart `flask run` |
+| `sqlite3.OperationalError: no such table: users` | Migrations were never applied | Run `flask db upgrade` |
+| Registration/login form re-shows with no visible error after submitting | CSRF token expired (session too old, or form left open too long) | Refresh the page and submit again — the form now shows "Your session expired" when this happens |
