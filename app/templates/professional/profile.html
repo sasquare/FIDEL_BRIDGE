@@ -1,0 +1,42 @@
+{% extends "dashboard/_shell.html" %}
+{% from "macros/forms.html" import render_field, render_form_errors %}
+{% block title %}My Profile — FidelBridge{% endblock %}
+
+{% block dashboard_content %}
+<span class="eyebrow">Account Settings</span>
+<h1 class="mt-3 text-3xl font-extrabold text-brand-900">My Profile</h1>
+<p class="mt-3 max-w-xl text-slate-600">
+  This information appears on your public profile — the more complete it is, the more
+  customers will trust you.
+</p>
+
+<div class="card mt-8 max-w-2xl !p-8">
+  <form method="POST" novalidate class="flex flex-col gap-5">
+    {{ form.hidden_tag() }}
+    {{ render_form_errors(form) }}
+    {{ render_field(form.profession) }}
+    {{ render_field(form.category_id) }}
+    <div class="grid gap-5 sm:grid-cols-2">
+      {{ render_field(form.city) }}
+      {{ render_field(form.state) }}
+    </div>
+    {{ render_field(form.years_experience) }}
+    {{ render_field(form.bio) }}
+
+    <div>
+      <label class="text-sm font-medium text-slate-700">Available Days</label>
+      <div class="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
+        {% for subfield in form.available_days %}
+        <label class="flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-600">
+          {{ subfield(class_="h-4 w-4 rounded border-slate-300 text-brand-700 focus:ring-brand-500") }}
+          {{ subfield.label.text }}
+        </label>
+        {% endfor %}
+      </div>
+    </div>
+
+    {{ render_field(form.available_hours) }}
+    {{ form.submit(class_="btn-primary mt-2 w-full sm:w-auto") }}
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,38 @@
+{% extends "dashboard/_shell.html" %}
+{% from "macros/forms.html" import render_field, render_form_errors %}
+{% block title %}Skills — FidelBridge{% endblock %}
+
+{% block dashboard_content %}
+<span class="eyebrow">Profile</span>
+<h1 class="mt-3 text-3xl font-extrabold text-brand-900">Skills</h1>
+<p class="mt-3 max-w-xl text-slate-600">List specific skills so customers know exactly what you can do.</p>
+
+<div class="card mt-8 max-w-xl !p-8">
+  <form method="POST" novalidate class="flex flex-col gap-4 sm:flex-row sm:items-end">
+    {{ form.hidden_tag() }}
+    <div class="flex-1">
+      {{ render_field(form.name) }}
+    </div>
+    {{ form.submit(class_="btn-primary shrink-0") }}
+  </form>
+  {{ render_form_errors(form) }}
+
+  {% if skills %}
+  <div class="mt-6 flex flex-wrap gap-2">
+    {% for skill in skills %}
+    <span class="flex items-center gap-2 rounded-full bg-brand-50 py-1.5 pl-4 pr-2 text-sm font-medium text-brand-700">
+      {{ skill.name }}
+      <form method="POST" action="{{ url_for('professional.delete_skill', skill_id=skill.id) }}">
+        {{ delete_form.hidden_tag() }}
+        <button type="submit" class="flex h-5 w-5 items-center justify-center rounded-full text-brand-700 hover:bg-brand-100" aria-label="Remove {{ skill.name }}">
+          &times;
+        </button>
+      </form>
+    </span>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="mt-6 text-sm italic text-slate-400">No skills added yet.</p>
+  {% endif %}
+</div>
+{% endblock %}

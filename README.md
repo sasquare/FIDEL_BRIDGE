@@ -14,9 +14,11 @@ This repository is being built in phases.
 - **Phase 2:** authentication — Customer/Professional/Corporate
   registration, login/logout, password hashing, role-based access control,
   and role-specific dashboard redirects.
-- **Phase 3 (this phase):** customer dashboard & discovery — customer
-  profile editing, service categories, professional search/filtering, and
-  public professional profile pages.
+- **Phase 3:** customer dashboard & discovery — customer profile editing,
+  service categories, professional search/filtering, and public
+  professional profile pages.
+- **Phase 4 (this phase):** professional dashboard — complete profile,
+  skills, portfolio, availability, and verification document upload.
 
 ## Tech Stack
 

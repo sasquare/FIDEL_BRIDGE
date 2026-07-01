@@ -11,6 +11,9 @@ env/
 instance/
 .env
 
+# User-uploaded content (runtime data, not source)
+app/static/uploads/
+
 # Node / Tailwind
 node_modules/
 

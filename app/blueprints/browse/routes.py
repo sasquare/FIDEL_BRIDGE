@@ -6,6 +6,7 @@ from app.extensions import db
 from app.models import roles
 from app.models.category import Category
 from app.models.professional import ProfessionalProfile
+from app.models.skill import Skill
 from app.models.user import User
 
 PER_PAGE = 12
@@ -46,6 +47,7 @@ def professionals():
                 User.full_name.ilike(like),
                 ProfessionalProfile.profession.ilike(like),
                 ProfessionalProfile.bio.ilike(like),
+                ProfessionalProfile.id.in_(select(Skill.professional_profile_id).where(Skill.name.ilike(like))),
             )
         )
 

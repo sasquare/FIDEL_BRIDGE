@@ -104,6 +104,19 @@ Visit **http://127.0.0.1:5000** — you should see the FidelBridge landing page.
   (`/browse/professionals/<id>`) and confirm it loads.
 - As a customer, visit `/customer/profile`, change a field, save, and
   confirm the change persists after a page refresh.
+- Register a Professional, then visit `/professional/profile` and check a
+  few "Available Days" boxes, save, and confirm they're still checked after
+  the page reloads (not just saved — actually re-checked on screen).
+- Add a skill at `/professional/skills` and confirm it appears as a chip;
+  remove it and confirm it disappears.
+- Add a portfolio item with a photo at `/professional/portfolio`, and
+  confirm the photo appears both there and on the public profile page.
+- Upload a document at `/professional/verification` and confirm it shows
+  "Pending"; click "View" and confirm the file downloads/opens.
+- Log in as a *different* professional and try to guess another
+  professional's verification document URL
+  (`/professional/verification/<id>/download`) — it should 404, not serve
+  the file.
 
 ## Running tests
 
@@ -111,8 +124,9 @@ Visit **http://127.0.0.1:5000** — you should see the FidelBridge landing page.
 pytest
 ```
 
-All tests should pass (21 as of Phase 3, across `tests/test_landing_page.py`,
-`tests/test_auth.py`, `tests/test_browse.py`, and `tests/test_customer.py`).
+All tests should pass (30 as of Phase 4, across `tests/test_landing_page.py`,
+`tests/test_auth.py`, `tests/test_browse.py`, `tests/test_customer.py`, and
+`tests/test_professional.py`).
 
 ## Common Errors & Troubleshooting
 
