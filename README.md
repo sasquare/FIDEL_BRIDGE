@@ -11,9 +11,12 @@ This repository is being built in phases.
 - **Phase 1:** project foundation — Flask application factory, blueprint
   structure, SQLite/SQLAlchemy wiring, Tailwind CSS design system, and the
   public landing page.
-- **Phase 2 (this phase):** authentication — Customer/Professional/Corporate
+- **Phase 2:** authentication — Customer/Professional/Corporate
   registration, login/logout, password hashing, role-based access control,
   and role-specific dashboard redirects.
+- **Phase 3 (this phase):** customer dashboard & discovery — customer
+  profile editing, service categories, professional search/filtering, and
+  public professional profile pages.
 
 ## Tech Stack
 
@@ -42,12 +45,14 @@ npm run build                   # compiles Tailwind CSS
 
 cp .env.example .env            # then edit SECRET_KEY
 flask db upgrade                # creates instance/fidelbridge.db
+flask seed-categories           # populates default service categories
 
 flask run
 ```
 
-Visit http://127.0.0.1:5000 to view the landing page, or
-http://127.0.0.1:5000/auth/register to create an account.
+Visit http://127.0.0.1:5000 to view the landing page,
+http://127.0.0.1:5000/auth/register to create an account, or
+http://127.0.0.1:5000/browse/professionals to search professionals.
 
 ## Running Tests
 

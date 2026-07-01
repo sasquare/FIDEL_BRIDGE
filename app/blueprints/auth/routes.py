@@ -12,6 +12,7 @@ from app.forms.auth import (
     ProfessionalRegistrationForm,
 )
 from app.models import roles
+from app.models.category import Category
 from app.models.corporate import CorporateProfile
 from app.models.customer import CustomerProfile
 from app.models.professional import ProfessionalProfile
@@ -65,6 +66,10 @@ def register_professional():
         return redirect(dashboard_url_for(current_user))
 
     form = ProfessionalRegistrationForm()
+    form.category_id.choices = [
+        (category.id, category.name) for category in Category.query.order_by(Category.name).all()
+    ]
+
     if form.validate_on_submit():
         user = User(
             full_name=form.full_name.data.strip(),
@@ -75,6 +80,7 @@ def register_professional():
         user.set_password(form.password.data)
         user.professional_profile = ProfessionalProfile(
             profession=form.profession.data.strip(),
+            category_id=form.category_id.data,
             city=form.city.data.strip() if form.city.data else None,
         )
 

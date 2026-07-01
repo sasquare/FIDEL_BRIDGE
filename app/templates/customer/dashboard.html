@@ -1,28 +1,46 @@
-{% extends "base.html" %}
+{% extends "dashboard/_shell.html" %}
 {% block title %}Customer Dashboard — FidelBridge{% endblock %}
 
-{% block content %}
-<section class="section">
-  <span class="eyebrow">Customer Dashboard</span>
-  <h1 class="mt-3 text-3xl font-extrabold text-brand-900">Welcome, {{ user.full_name }}</h1>
-  <p class="mt-3 max-w-xl text-slate-600">
-    Your booking history, saved professionals and messages will appear here as they're
-    built out in the next phases.
-  </p>
+{% block dashboard_content %}
+<span class="eyebrow">Customer Dashboard</span>
+<h1 class="mt-3 text-3xl font-extrabold text-brand-900">Welcome, {{ user.full_name }}</h1>
+<p class="mt-3 max-w-xl text-slate-600">
+  Your booking history and messages will appear here as they're built out in the next
+  phases. For now, jump straight into finding a professional.
+</p>
 
-  <div class="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-    <div class="card !p-6">
-      <p class="text-sm font-semibold text-slate-500">Active Bookings</p>
-      <p class="mt-2 text-3xl font-extrabold text-brand-900">0</p>
-    </div>
-    <div class="card !p-6">
-      <p class="text-sm font-semibold text-slate-500">Completed Jobs</p>
-      <p class="mt-2 text-3xl font-extrabold text-brand-900">0</p>
-    </div>
-    <div class="card !p-6">
-      <p class="text-sm font-semibold text-slate-500">Unread Messages</p>
-      <p class="mt-2 text-3xl font-extrabold text-brand-900">0</p>
-    </div>
+<div class="mt-6">
+  <a href="{{ url_for('browse.professionals') }}" class="btn-primary">Find a Professional</a>
+</div>
+
+<div class="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+  <div class="card !p-6">
+    <p class="text-sm font-semibold text-slate-500">Active Bookings</p>
+    <p class="mt-2 text-3xl font-extrabold text-brand-900">0</p>
   </div>
-</section>
+  <div class="card !p-6">
+    <p class="text-sm font-semibold text-slate-500">Completed Jobs</p>
+    <p class="mt-2 text-3xl font-extrabold text-brand-900">0</p>
+  </div>
+  <div class="card !p-6">
+    <p class="text-sm font-semibold text-slate-500">Unread Messages</p>
+    <p class="mt-2 text-3xl font-extrabold text-brand-900">0</p>
+  </div>
+</div>
+
+<div class="mt-10">
+  <h2 class="text-lg font-semibold text-brand-900">Browse by Category</h2>
+  <div class="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3">
+    {% for category in categories %}
+    <a href="{{ url_for('browse.professionals', category=category.slug) }}" class="card flex items-center gap-3 !p-4">
+      <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-50 text-brand-700">
+        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+          <path stroke-linecap="round" stroke-linejoin="round" d="{{ category.icon_path }}" />
+        </svg>
+      </span>
+      <span class="truncate text-sm font-semibold text-brand-900">{{ category.name }}</span>
+    </a>
+    {% endfor %}
+  </div>
+</div>
 {% endblock %}

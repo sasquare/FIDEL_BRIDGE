@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from wtforms import BooleanField, PasswordField, StringField, SubmitField
+from wtforms import BooleanField, PasswordField, SelectField, StringField, SubmitField
 from wtforms.validators import DataRequired, Email, EqualTo, Length, Optional, ValidationError
 
 from app.models.user import User
@@ -26,6 +26,7 @@ class CustomerRegistrationForm(RegistrationForm):
 
 class ProfessionalRegistrationForm(RegistrationForm):
     profession = StringField("Profession / Trade", validators=[DataRequired(), Length(max=120)])
+    category_id = SelectField("Category", coerce=int, validators=[DataRequired(message="Please choose a category.")])
     city = StringField("City", validators=[Optional(), Length(max=100)])
     submit = SubmitField("Create Professional Account")
 

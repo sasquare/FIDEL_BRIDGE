@@ -60,9 +60,19 @@ flask db upgrade
 ```
 
 This creates `instance/fidelbridge.db` with the `users`, `customer_profiles`,
-`professional_profiles`, and `corporate_profiles` tables.
+`professional_profiles`, `corporate_profiles`, and `categories` tables.
 
-## 7. Run the app
+## 7. Seed the default service categories
+
+```bash
+flask seed-categories
+```
+
+This populates Electricians, Plumbers, Carpenters, and the other default
+categories. It's safe to re-run — it skips categories that already exist.
+Professional registration requires at least one category to exist.
+
+## 8. Run the app
 
 ```bash
 flask run
@@ -85,6 +95,15 @@ Visit **http://127.0.0.1:5000** — you should see the FidelBridge landing page.
   dashboard.
 - While logged in as a customer, visiting `/professional/dashboard` directly
   should show the 403 page.
+- Visit `/browse/categories` — you should see 12 category cards (if empty,
+  run `flask seed-categories`).
+- Register a Professional account and pick a category; then visit
+  `/browse/professionals` and confirm the new professional appears and that
+  filtering by category/city/keyword narrows the results.
+- Click through to a professional's public profile page
+  (`/browse/professionals/<id>`) and confirm it loads.
+- As a customer, visit `/customer/profile`, change a field, save, and
+  confirm the change persists after a page refresh.
 
 ## Running tests
 
@@ -92,7 +111,8 @@ Visit **http://127.0.0.1:5000** — you should see the FidelBridge landing page.
 pytest
 ```
 
-All tests (`tests/test_landing_page.py`, `tests/test_auth.py`) should pass.
+All tests should pass (21 as of Phase 3, across `tests/test_landing_page.py`,
+`tests/test_auth.py`, `tests/test_browse.py`, and `tests/test_customer.py`).
 
 ## Common Errors & Troubleshooting
 
@@ -105,4 +125,5 @@ All tests (`tests/test_landing_page.py`, `tests/test_auth.py`) should pass.
 | Changes to Tailwind classes don't show up | CSS wasn't rebuilt | Run `npm run build`, or keep `npm run watch` running while you work |
 | `.env` values not taking effect | `.env` not created, or Flask started before it was created | Confirm `.env` exists at the project root and restart `flask run` |
 | `sqlite3.OperationalError: no such table: users` | Migrations were never applied | Run `flask db upgrade` |
+| Professional registration form shows no category options / fails validation | Categories were never seeded | Run `flask seed-categories` |
 | Registration/login form re-shows with no visible error after submitting | CSRF token expired (session too old, or form left open too long) | Refresh the page and submit again — the form now shows "Your session expired" when this happens |

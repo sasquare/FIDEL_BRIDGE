@@ -43,3 +43,27 @@ All notable changes to this project are documented here.
 - Added a 403 error page.
 - Extended the Pytest suite to cover registration, login, logout, session
   protection, and role-based access control (12 tests total).
+
+## Phase 3 — Customer Dashboard, Browse & Search
+
+- Added a `Category` model and a `flask seed-categories` CLI command that
+  idempotently seeds the 12 default service categories.
+- Linked `ProfessionalProfile` to `Category` and added a required category
+  picker to professional registration.
+- Added a public `browse` blueprint: `/browse/categories` (category grid),
+  `/browse/professionals` (search with keyword/category/city filters and
+  pagination), and `/browse/professionals/<user_id>` (public professional
+  profile page with a verification badge and an honest "Booking Coming
+  Soon" / "Log In to Book" CTA rather than a fake working button).
+- Reworked the landing page's category grid to pull from the database
+  (single source of truth) and link each card to the matching search
+  results; pointed the navbar "Services" link at the real search page.
+- Added a shared, responsive dashboard shell (`dashboard/_shell.html`) with
+  a sidebar that collapses into horizontally scrollable tabs on mobile, and
+  rebuilt the customer dashboard on top of it with quick links and a
+  category shortcut grid.
+- Added a customer profile page (`/customer/profile`) to edit name, phone,
+  address, city, and state.
+- Extended the Pytest suite to cover category browsing, professional
+  search/filtering, public profile pages, and customer profile editing
+  (21 tests total).

@@ -31,6 +31,7 @@ def create_app(config_name=None):
     register_blueprints(app)
     register_error_handlers(app)
     register_context_processors(app)
+    register_cli_commands(app)
 
     return app
 
@@ -49,6 +50,7 @@ def register_context_processors(app):
 
 def register_blueprints(app):
     from app.blueprints.auth import auth_bp
+    from app.blueprints.browse import browse_bp
     from app.blueprints.corporate import corporate_bp
     from app.blueprints.customer import customer_bp
     from app.blueprints.main import main_bp
@@ -56,9 +58,20 @@ def register_blueprints(app):
 
     app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp)
+    app.register_blueprint(browse_bp)
     app.register_blueprint(customer_bp)
     app.register_blueprint(professional_bp)
     app.register_blueprint(corporate_bp)
+
+
+def register_cli_commands(app):
+    @app.cli.command("seed-categories")
+    def seed_categories_command():
+        """Populate the default service categories (safe to re-run)."""
+        from app.seeds import seed_categories
+
+        created = seed_categories()
+        print(f"Seeded {created} new categories.")
 
 
 def register_error_handlers(app):

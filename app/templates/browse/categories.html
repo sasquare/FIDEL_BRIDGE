@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Browse Categories — FidelBridge{% endblock %}
+
+{% block content %}
+<section class="section">
+  <div class="mx-auto max-w-2xl text-center">
+    <span class="eyebrow">Browse</span>
+    <h1 class="mt-3 text-3xl font-extrabold text-brand-900 sm:text-4xl">Every service category</h1>
+    <p class="mt-4 text-slate-600">Pick a category to see verified professionals near you.</p>
+  </div>
+
+  <div class="mt-14 grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-4">
+    {% for category in categories %}
+    <a href="{{ url_for('browse.professionals', category=category.slug) }}" class="card flex flex-col items-center !p-6 text-center">
+      <span class="flex h-12 w-12 items-center justify-center rounded-full bg-brand-50 text-brand-700">
+        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+          <path stroke-linecap="round" stroke-linejoin="round" d="{{ category.icon_path }}" />
+        </svg>
+      </span>
+      <p class="mt-4 text-sm font-semibold text-brand-900">{{ category.name }}</p>
+      <p class="mt-1 text-xs text-slate-500">{{ category.professional_profiles|length }} professional{{ 's' if category.professional_profiles|length != 1 else '' }}</p>
+    </a>
+    {% else %}
+    <p class="col-span-full text-center text-slate-500">
+      No categories yet. Run <code class="rounded bg-slate-100 px-2 py-1">flask seed-categories</code> to add the defaults.
+    </p>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

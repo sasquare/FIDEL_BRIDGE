@@ -16,7 +16,7 @@ def register_customer(client, email="jane@example.com"):
     )
 
 
-def register_professional(client, email="tunde@example.com"):
+def register_professional(client, category_id, email="tunde@example.com"):
     return client.post(
         "/auth/register/professional",
         data={
@@ -24,6 +24,7 @@ def register_professional(client, email="tunde@example.com"):
             "email": email,
             "phone": "08099999999",
             "profession": "Electrician",
+            "category_id": category_id,
             "city": "Abuja",
             "password": "supersecret",
             "confirm_password": "supersecret",
@@ -62,14 +63,15 @@ def test_customer_registration_creates_user_and_logs_in(client, app):
         assert user.customer_profile.city == "Lagos"
 
 
-def test_professional_registration_creates_profile(client, app):
-    response = register_professional(client)
+def test_professional_registration_creates_profile(client, app, category):
+    response = register_professional(client, category)
     assert response.status_code == 200
 
     with app.app_context():
         user = User.query.filter_by(email="tunde@example.com").first()
         assert user.role == "professional"
         assert user.professional_profile.profession == "Electrician"
+        assert user.professional_profile.category_id == category
 
 
 def test_corporate_registration_creates_profile(client, app):

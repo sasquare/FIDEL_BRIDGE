@@ -8,6 +8,7 @@ class ProfessionalProfile(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), unique=True, nullable=False)
+    category_id = db.Column(db.Integer, db.ForeignKey("categories.id"), nullable=True)
 
     profession = db.Column(db.String(120), nullable=False)
     city = db.Column(db.String(100), nullable=True)
@@ -21,6 +22,7 @@ class ProfessionalProfile(db.Model):
     created_at = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
 
     user = db.relationship("User", back_populates="professional_profile")
+    category = db.relationship("Category", back_populates="professional_profiles")
 
     def __repr__(self):
         return f"<ProfessionalProfile user_id={self.user_id} profession={self.profession!r}>"

@@ -6,23 +6,27 @@ FIDEL_BRIDGE/
 │   ├── __init__.py            # Application factory (create_app)
 │   ├── config.py              # Environment-based configuration classes
 │   ├── extensions.py          # Shared Flask extension instances (db, migrate, login_manager)
+│   ├── seeds.py                # Idempotent reference-data seeding (categories)
 │   ├── blueprints/
-│   │   ├── main/               # Public marketing pages (landing page, etc.)
-│   │   ├── auth/                # Registration, login, logout
-│   │   ├── customer/            # Customer dashboard (protected, role=customer)
-│   │   ├── professional/        # Professional dashboard (protected, role=professional)
-│   │   └── corporate/           # Corporate dashboard (protected, role=corporate)
+│   │   ├── main/                # Public marketing pages (landing page, etc.)
+│   │   ├── auth/                 # Registration, login, logout
+│   │   ├── browse/               # Public category/professional search + profile pages
+│   │   ├── customer/             # Customer dashboard + profile (protected, role=customer)
+│   │   ├── professional/         # Professional dashboard (protected, role=professional)
+│   │   └── corporate/            # Corporate dashboard (protected, role=corporate)
 │   │       ├── __init__.py
 │   │       └── routes.py
 │   ├── forms/
-│   │   └── auth.py            # Flask-WTF registration/login forms + validation
+│   │   ├── auth.py            # Flask-WTF registration/login forms + validation
+│   │   └── customer.py        # Customer profile edit form
 │   ├── models/
 │   │   ├── __init__.py        # Imports every model so Flask-Migrate sees them
 │   │   ├── roles.py           # Role constants (customer/professional/corporate/admin)
 │   │   ├── user.py            # User model (auth, password hashing, Flask-Login)
 │   │   ├── customer.py        # CustomerProfile (1:1 with User)
-│   │   ├── professional.py    # ProfessionalProfile (1:1 with User)
-│   │   └── corporate.py       # CorporateProfile (1:1 with User)
+│   │   ├── professional.py    # ProfessionalProfile (1:1 with User, linked to Category)
+│   │   ├── corporate.py       # CorporateProfile (1:1 with User)
+│   │   └── category.py        # Category (service categories: Electricians, Plumbers, ...)
 │   ├── utils/
 │   │   ├── decorators.py      # role_required(*roles) route decorator
 │   │   └── auth_helpers.py    # dashboard_url_for(user) role -> dashboard redirect
@@ -34,6 +38,8 @@ FIDEL_BRIDGE/
 │   │   │   └── flash_messages.html
 │   │   ├── macros/
 │   │   │   └── forms.html     # Reusable styled field/checkbox/error-banner macros
+│   │   ├── dashboard/
+│   │   │   └── _shell.html    # Shared responsive dashboard shell (sidebar -> mobile tabs)
 │   │   ├── errors/
 │   │   │   ├── 403.html
 │   │   │   ├── 404.html
@@ -46,7 +52,13 @@ FIDEL_BRIDGE/
 │   │   │   ├── register_professional.html
 │   │   │   ├── register_corporate.html
 │   │   │   └── login.html
-│   │   ├── customer/dashboard.html
+│   │   ├── browse/
+│   │   │   ├── categories.html
+│   │   │   ├── professionals.html
+│   │   │   └── professional_profile.html
+│   │   ├── customer/
+│   │   │   ├── dashboard.html
+│   │   │   └── profile.html
 │   │   ├── professional/dashboard.html
 │   │   └── corporate/dashboard.html
 │   └── static/
@@ -77,9 +89,10 @@ FIDEL_BRIDGE/
   instantiated multiple times with different configs (development, testing,
   production) — required for clean testing and future scaling.
 - **Blueprints** separate concerns by user-facing area: `main` (public
-  pages), `auth` (registration/login/logout), and one blueprint per role
-  (`customer`, `professional`, `corporate`) for their dashboards. `admin` is
-  added in Phase 9.
+  pages), `auth` (registration/login/logout), `browse` (public category and
+  professional search — not behind login, since discovery should be open),
+  and one blueprint per role (`customer`, `professional`, `corporate`) for
+  their dashboards. `admin` is added in Phase 9.
 - **One `users` table, not a `Role` table**: `role` is a plain string column
   with a DB-level check constraint (`app/models/roles.py`). With a small,
   fixed set of roles this is simpler than a many-to-many `Role` table and
@@ -90,6 +103,18 @@ FIDEL_BRIDGE/
 - **`role_required` decorator** wraps `flask_login.login_required` and
   checks `current_user.role`, so protected routes get both "must be logged
   in" and "must be the right role" in one line.
+- **`Category` as its own table**, linked from `ProfessionalProfile`, rather
+  than a hardcoded list — the same categories now drive the landing page,
+  registration form, and search filters from one source of truth. Seeded
+  via `flask seed-categories` (idempotent) rather than baked into a
+  migration, since reference data and schema changes are different concerns.
+- **Shared dashboard shell** (`dashboard/_shell.html`) factors out the
+  sidebar-that-becomes-mobile-tabs layout so Phase 4/5 can reuse it for the
+  professional and corporate dashboards instead of re-implementing it.
+- **No fake "Book Now" button**: the public professional profile shows
+  "Log In to Book" (anonymous) or a disabled "Booking Coming Soon" state
+  (logged in) rather than a button that looks functional but does nothing —
+  booking itself is Phase 6.
 - **SQLite now, PostgreSQL later**: `DATABASE_URL` is read from the
   environment, so switching to PostgreSQL in production is a config change,
   not a code change.
