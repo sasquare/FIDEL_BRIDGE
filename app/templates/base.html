@@ -7,7 +7,7 @@
   <meta name="description" content="{% block description %}FidelBridge connects Nigerian customers, artisans, professionals and corporate organizations on one trusted, verified service marketplace.{% endblock %}" />
 
   <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='images/favicon.svg') }}" />
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/output.css') }}" />
+  <link rel="stylesheet" href="{{ asset_url('css/output.css') }}" />
 
   {% block extra_head %}{% endblock %}
 </head>
@@ -22,8 +22,8 @@
 
   {% include "partials/footer.html" %}
 
-  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
-  <script defer src="{{ url_for('static', filename='vendor/alpinejs/alpine.min.js') }}"></script>
+  <script src="{{ asset_url('js/main.js') }}"></script>
+  <script defer src="{{ asset_url('vendor/alpinejs/alpine.min.js') }}"></script>
   {% block extra_scripts %}{% endblock %}
 </body>
 </html>

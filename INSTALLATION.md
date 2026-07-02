@@ -204,6 +204,21 @@ Visit **http://127.0.0.1:5000** — you should see the FidelBridge landing page.
   bookings by status).
 - Confirm a non-admin account gets a 403 when visiting any `/admin/*` URL
   directly.
+- Open your browser's dev tools, load any page, and check the response
+  headers for `Content-Security-Policy`, `X-Frame-Options: DENY`, and
+  `X-Content-Type-Options: nosniff`. Confirm there are no CSP violations
+  logged in the console (the mobile nav menu, flash-message dismiss, and
+  the admin reports bar charts all depend on the CSP allowing Alpine.js
+  and inline styles).
+- On `/auth/login`, submit the wrong password 11 times in under a minute —
+  the 11th attempt should show the custom "You're going a bit too fast"
+  429 page, not a normal login retry.
+- Submit any form (e.g. login) and confirm the submit button visibly
+  disables and shows "Please wait…" the moment you click it.
+- Visit `/healthz` and confirm it returns `{"status": "ok"}`.
+- Reload any page and check that `/static/css/output.css` is requested
+  with a `?v=<number>` query string, and that its response includes a
+  `Cache-Control: public, max-age=86400` header.
 
 ## Running tests
 
@@ -211,11 +226,26 @@ Visit **http://127.0.0.1:5000** — you should see the FidelBridge landing page.
 pytest
 ```
 
-All tests should pass (79 as of Phase 9, across `tests/test_landing_page.py`,
+All tests should pass (79 as of Phase 10, across `tests/test_landing_page.py`,
 `tests/test_auth.py`, `tests/test_browse.py`, `tests/test_customer.py`,
 `tests/test_professional.py`, `tests/test_corporate.py`,
 `tests/test_booking.py`, `tests/test_messaging.py`, `tests/test_reviews.py`,
-and `tests/test_admin.py`).
+and `tests/test_admin.py`). Rate limiting is disabled in the test config
+(`RATELIMIT_ENABLED = False`) so tests that log in more than 10 times don't
+trip the production rate limit.
+
+## Deploying to Render
+
+1. Push this repository to GitHub.
+2. In the Render dashboard, choose **New +** → **Blueprint**, and point it
+   at the repo. Render reads `render.yaml` and provisions a web service
+   plus a managed PostgreSQL database automatically, generating a random
+   `SECRET_KEY` for you.
+3. Once the first deploy finishes, open the service's **Shell** tab and run
+   `flask create-admin` to create your first admin account — there is no
+   public admin sign-up route.
+4. Work through [PRODUCTION_CHECKLIST.md](PRODUCTION_CHECKLIST.md) before
+   sharing the URL with real users.
 
 ## Common Errors & Troubleshooting
 

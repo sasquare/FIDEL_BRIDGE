@@ -27,9 +27,11 @@ This repository is being built in phases.
   messages, and basic real-time updates (polling).
 - **Phase 8:** ratings & reviews, plus location/category filters and
   sorting on search.
-- **Phase 9 (this phase):** admin dashboard — approve professionals,
-  manage categories/users/bookings/corporate requests, and platform
-  reports.
+- **Phase 9:** admin dashboard — approve professionals, manage
+  categories/users/bookings/corporate requests, and platform reports.
+- **Phase 10 (this phase):** UI polish, security hardening (headers, rate
+  limiting, secure cookies), performance (DB indexes, asset caching), and
+  Render deployment configuration.
 
 ## Tech Stack
 
@@ -73,6 +75,13 @@ http://127.0.0.1:5000/browse/professionals to search professionals.
 ```bash
 pytest
 ```
+
+## Deployment
+
+FidelBridge deploys to [Render](https://render.com) as a Blueprint —
+`render.yaml` provisions a web service plus a managed PostgreSQL database
+in one step. Before going live, work through
+[PRODUCTION_CHECKLIST.md](PRODUCTION_CHECKLIST.md).
 
 ## Changelog
 

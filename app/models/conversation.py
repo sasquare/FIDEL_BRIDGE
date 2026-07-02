@@ -7,8 +7,8 @@ class Conversation(db.Model):
     __tablename__ = "conversations"
 
     id = db.Column(db.Integer, primary_key=True)
-    user_one_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
-    user_two_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    user_one_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
+    user_two_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
     # Conversations are started from an accepted booking, so the thread has
     # context. Unique per booking: each job gets at most one conversation.
     booking_id = db.Column(db.Integer, db.ForeignKey("bookings.id"), unique=True, nullable=True)

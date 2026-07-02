@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}File Too Large — FidelBridge{% endblock %}
+{% block content %}
+<section class="section flex flex-col items-center py-32 text-center">
+  <span class="eyebrow">Error 413</span>
+  <h1 class="mt-3 text-4xl font-extrabold text-brand-900">That file is too large.</h1>
+  <p class="mt-4 max-w-md text-slate-600">
+    Uploads are limited to 5&nbsp;MB. Please choose a smaller file and try again.
+  </p>
+  <a href="{{ url_for('main.index') }}" class="btn-primary mt-8">Back to Home</a>
+</section>
+{% endblock %}

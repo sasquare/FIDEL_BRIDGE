@@ -4,9 +4,10 @@ from datetime import datetime
 
 import click
 from flask import Flask, render_template
+from werkzeug.middleware.proxy_fix import ProxyFix
 
-from app.config import config
-from app.extensions import db, login_manager, migrate
+from app.config import DEV_SECRET_KEY, config
+from app.extensions import db, limiter, login_manager, migrate
 
 
 def create_app(config_name=None):
@@ -16,10 +17,27 @@ def create_app(config_name=None):
     app = Flask(__name__, instance_relative_config=True)
     app.config.from_object(config[config_name])
 
+    if config_name == "production" and app.config["SECRET_KEY"] == DEV_SECRET_KEY:
+        raise RuntimeError(
+            "SECRET_KEY is not set (or still the development default). "
+            "Set a long, random SECRET_KEY environment variable before "
+            "running in production."
+        )
+
+    if config_name == "production":
+        # Render (like most PaaS providers) terminates TLS at its edge and
+        # forwards requests to the app over plain HTTP within its network.
+        # Without this, Flask would see every request as http://, breaking
+        # PREFERRED_URL_SCHEME/secure cookies and any client-IP-based logic
+        # (e.g. rate limiting) would see the proxy's IP instead of the
+        # visitor's.
+        app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
+
     os.makedirs(app.instance_path, exist_ok=True)
 
     db.init_app(app)
     migrate.init_app(app, db)
+    limiter.init_app(app)
 
     login_manager.init_app(app)
     login_manager.login_view = "auth.login"
@@ -33,6 +51,11 @@ def create_app(config_name=None):
     register_error_handlers(app)
     register_context_processors(app)
     register_cli_commands(app)
+    register_security(app)
+
+    from app.utils.assets import asset_url
+
+    app.jinja_env.globals["asset_url"] = asset_url
 
     return app
 
@@ -125,6 +148,31 @@ def register_cli_commands(app):
         print(f"Admin account created for {email}.")
 
 
+def register_security(app):
+    @app.after_request
+    def set_security_headers(response):
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+        # 'unsafe-eval' is required by Alpine.js's expression evaluator
+        # (x-data/x-show attributes); 'unsafe-inline' on style-src covers
+        # the inline width:% styles used for the admin reports bar charts.
+        # Everything else (scripts, stylesheets, fonts, images) is
+        # self-hosted, so there's no need to allow any other origin.
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'self'; "
+            "script-src 'self' 'unsafe-eval'; "
+            "style-src 'self' 'unsafe-inline'; "
+            "img-src 'self' data:; "
+            "font-src 'self'; "
+            "frame-ancestors 'none'"
+        )
+        if app.config.get("PREFERRED_URL_SCHEME") == "https":
+            response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+        return response
+
+
 def register_error_handlers(app):
     @app.errorhandler(400)
     def bad_request(error):
@@ -137,6 +185,14 @@ def register_error_handlers(app):
     @app.errorhandler(404)
     def not_found(error):
         return render_template("errors/404.html"), 404
+
+    @app.errorhandler(413)
+    def payload_too_large(error):
+        return render_template("errors/413.html"), 413
+
+    @app.errorhandler(429)
+    def rate_limited(error):
+        return render_template("errors/429.html"), 429
 
     @app.errorhandler(500)
     def server_error(error):

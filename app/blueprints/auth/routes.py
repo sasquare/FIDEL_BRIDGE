@@ -4,7 +4,7 @@ from flask import flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required, login_user, logout_user
 
 from app.blueprints.auth import auth_bp
-from app.extensions import db
+from app.extensions import db, limiter
 from app.forms.auth import (
     CorporateRegistrationForm,
     CustomerRegistrationForm,
@@ -35,6 +35,7 @@ def register_choice():
 
 
 @auth_bp.route("/register/customer", methods=["GET", "POST"])
+@limiter.limit("20 per hour", methods=["POST"])
 def register_customer():
     if current_user.is_authenticated:
         return redirect(dashboard_url_for(current_user))
@@ -61,6 +62,7 @@ def register_customer():
 
 
 @auth_bp.route("/register/professional", methods=["GET", "POST"])
+@limiter.limit("20 per hour", methods=["POST"])
 def register_professional():
     if current_user.is_authenticated:
         return redirect(dashboard_url_for(current_user))
@@ -95,6 +97,7 @@ def register_professional():
 
 
 @auth_bp.route("/register/corporate", methods=["GET", "POST"])
+@limiter.limit("20 per hour", methods=["POST"])
 def register_corporate():
     if current_user.is_authenticated:
         return redirect(dashboard_url_for(current_user))
@@ -125,6 +128,7 @@ def register_corporate():
 
 
 @auth_bp.route("/login", methods=["GET", "POST"])
+@limiter.limit("10 per minute", methods=["POST"])
 def login():
     if current_user.is_authenticated:
         return redirect(dashboard_url_for(current_user))

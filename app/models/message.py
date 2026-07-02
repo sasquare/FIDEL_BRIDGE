@@ -7,7 +7,7 @@ class Message(db.Model):
     __tablename__ = "messages"
 
     id = db.Column(db.Integer, primary_key=True)
-    conversation_id = db.Column(db.Integer, db.ForeignKey("conversations.id"), nullable=False)
+    conversation_id = db.Column(db.Integer, db.ForeignKey("conversations.id"), nullable=False, index=True)
     sender_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
 
     body = db.Column(db.Text, nullable=False)

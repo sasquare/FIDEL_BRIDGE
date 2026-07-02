@@ -1,0 +1,40 @@
+# Render Blueprint — see https://render.com/docs/blueprint-spec
+#
+# Deploys FidelBridge as a single web service backed by a managed
+# PostgreSQL database. To use it: push this repo to GitHub, then in the
+# Render dashboard choose "New +" -> "Blueprint" and point it at the repo.
+# Render reads this file and provisions everything below automatically.
+services:
+  - type: web
+    name: fidelbridge
+    runtime: python
+    plan: free
+    region: oregon
+    branch: main
+    buildCommand: >-
+      pip install -r requirements.txt &&
+      npm install &&
+      npm run build &&
+      flask db upgrade &&
+      flask seed-categories
+    startCommand: gunicorn wsgi:app --workers 2 --timeout 60
+    healthCheckPath: /healthz
+    envVars:
+      - key: FLASK_APP
+        value: wsgi.py
+      - key: FLASK_ENV
+        value: production
+      - key: SECRET_KEY
+        generateValue: true
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: DATABASE_URL
+        fromDatabase:
+          name: fidelbridge-db
+          property: connectionString
+
+databases:
+  - name: fidelbridge-db
+    plan: free
+    databaseName: fidelbridge
+    user: fidelbridge

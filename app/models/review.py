@@ -10,7 +10,9 @@ class Review(db.Model):
     # One review per booking - a completed job can only be rated once.
     booking_id = db.Column(db.Integer, db.ForeignKey("bookings.id"), unique=True, nullable=False)
     customer_profile_id = db.Column(db.Integer, db.ForeignKey("customer_profiles.id"), nullable=False)
-    professional_profile_id = db.Column(db.Integer, db.ForeignKey("professional_profiles.id"), nullable=False)
+    professional_profile_id = db.Column(
+        db.Integer, db.ForeignKey("professional_profiles.id"), nullable=False, index=True
+    )
 
     rating = db.Column(db.Integer, nullable=False)
     comment = db.Column(db.Text, nullable=True)

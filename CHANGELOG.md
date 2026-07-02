@@ -311,3 +311,71 @@ first try:**
   and the can't-deactivate-another-admin rule, admin booking view/cancel,
   corporate request status updates (with notification), and the reports
   page (79 tests total).
+
+## Phase 10 — UI Polish, Security, Performance & Deployment
+
+- **Security headers on every response** (`X-Content-Type-Options`,
+  `X-Frame-Options: DENY`, `Referrer-Policy`, `Permissions-Policy`, and a
+  `Content-Security-Policy` scoped to self-hosted assets only), plus
+  `Strict-Transport-Security` in production. The CSP allows
+  `script-src 'unsafe-eval'` because Alpine.js's expression evaluator needs
+  it, and `style-src 'unsafe-inline'` because the Phase 9 report bar charts
+  use inline `width:` styles — both verified to still work with the CSP
+  active (checked for zero browser console errors across the landing page,
+  mobile nav, login, dashboards, and the reports page).
+- **Rate limiting** (`Flask-Limiter`): login is capped at 10 attempts per
+  minute and each registration form at 20 per hour, per IP, to blunt
+  brute-force and spam without needing a CAPTCHA. A dedicated 429 error
+  page matches the existing 400/403/404/500 pages. In-memory storage is
+  fine for the current single-instance deployment (documented in
+  `PRODUCTION_CHECKLIST.md` as something to revisit if the app ever scales
+  to multiple instances, since in-memory limits don't share state across
+  processes).
+- **Cookie & transport hardening in production**: `SESSION_COOKIE_SECURE`,
+  `REMEMBER_COOKIE_SECURE`, and `PREFERRED_URL_SCHEME=https` are only set
+  in `ProductionConfig` (forcing them in development would break `flask
+  run`'s plain-HTTP server). `ProxyFix` is applied in production so Flask
+  correctly sees `https://` and the real client IP through Render's proxy,
+  which both the secure-cookie logic and the rate limiter's per-IP keying
+  depend on.
+- **`ProductionConfig` refuses to boot with the default `SECRET_KEY`** —
+  fails fast with a clear `RuntimeError` at startup instead of silently
+  running with a well-known, insecure key.
+- **Database indexes** added on the foreign keys and columns actually
+  filtered/joined on in hot paths: booking status + both profile FKs,
+  professional `category_id`/`is_verified`, a composite
+  `(user_id, is_read)` index on notifications (the unread-count context
+  processor runs this exact lookup on every authenticated page load),
+  conversation participant columns, message `conversation_id`, corporate
+  request status + FK, and review/verification `professional_profile_id`.
+  Deliberately did **not** index `ProfessionalProfile.city`/`state` —
+  search filters those with a `%term%` `ILIKE`, which a plain B-tree index
+  can't accelerate anyway, so an index there would just be dead weight.
+- **Cache-busted static assets**: `SEND_FILE_MAX_AGE_DEFAULT` now caches
+  static files for a day (previously uncached), with a new
+  `asset_url()` Jinja helper (`app/utils/assets.py`) that appends the
+  file's mtime as a `?v=` query string — so `output.css`/`main.js`/vendored
+  Alpine.js get aggressive caching without ever serving a stale copy after
+  a deploy changes the file.
+- **UI polish**: flash messages now fade/slide in and out (`x-transition`)
+  instead of appearing instantly; every form submit button now shows a
+  "Please wait…" state and disables itself the moment it's clicked
+  (`app/static/js/main.js`, applied globally via a single `submit` event
+  listener), both giving clearer feedback on slower connections and
+  preventing accidental double-submits.
+- **Deployment**: added `render.yaml` (a Render Blueprint — one web
+  service plus a managed PostgreSQL database, with `SECRET_KEY`
+  auto-generated and `DATABASE_URL` wired automatically), a `/healthz`
+  endpoint for Render's health check, and `psycopg2-binary` in
+  `requirements.txt` so the app can actually talk to Postgres in
+  production (previously only SQLite's driver, which ships with Python,
+  was available).
+- Added a `PRODUCTION_CHECKLIST.md` covering secrets/config, database
+  setup and backups, the security measures above, performance notes, and
+  monitoring/operations — a punch list to work through before pointing a
+  real domain at a deployment.
+- No test changes were needed — Phase 10 is infrastructure/config/UI, not
+  new user-facing behavior; the full 79-test suite continues to pass
+  unchanged, and rate limiting is disabled in `TestingConfig`
+  (`RATELIMIT_ENABLED = False`) so it doesn't interfere with tests that
+  hit `/auth/login` more than 10 times.

@@ -35,15 +35,19 @@ class Booking(db.Model):
     __tablename__ = "bookings"
 
     id = db.Column(db.Integer, primary_key=True)
-    customer_profile_id = db.Column(db.Integer, db.ForeignKey("customer_profiles.id"), nullable=False)
-    professional_profile_id = db.Column(db.Integer, db.ForeignKey("professional_profiles.id"), nullable=False)
+    customer_profile_id = db.Column(
+        db.Integer, db.ForeignKey("customer_profiles.id"), nullable=False, index=True
+    )
+    professional_profile_id = db.Column(
+        db.Integer, db.ForeignKey("professional_profiles.id"), nullable=False, index=True
+    )
 
     title = db.Column(db.String(150), nullable=False)
     description = db.Column(db.Text, nullable=False)
     location = db.Column(db.String(150), nullable=True)
     preferred_date = db.Column(db.Date, nullable=True)
     budget_naira = db.Column(db.Integer, nullable=True)
-    status = db.Column(db.String(20), nullable=False, default=STATUS_PENDING)
+    status = db.Column(db.String(20), nullable=False, default=STATUS_PENDING, index=True)
 
     created_at = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
     updated_at = db.Column(

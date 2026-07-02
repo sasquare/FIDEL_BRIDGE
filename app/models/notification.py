@@ -15,6 +15,10 @@ class Notification(db.Model):
 
     created_at = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
 
+    # Composite index: the unread-count context processor runs this exact
+    # (user_id, is_read) lookup on every authenticated page view.
+    __table_args__ = (db.Index("ix_notifications_user_unread", "user_id", "is_read"),)
+
     user = db.relationship("User", back_populates="notifications")
 
     def __repr__(self):

@@ -6,16 +6,31 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
+DEV_SECRET_KEY = "dev-secret-key-change-in-production"
+
+
 class Config:
     """Base configuration shared by every environment."""
 
-    SECRET_KEY = os.environ.get("SECRET_KEY", "dev-secret-key-change-in-production")
+    SECRET_KEY = os.environ.get("SECRET_KEY", DEV_SECRET_KEY)
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_DATABASE_URI = os.environ.get(
         "DATABASE_URL", f"sqlite:///{BASE_DIR / 'instance' / 'fidelbridge.db'}"
     )
 
     MAX_CONTENT_LENGTH = 5 * 1024 * 1024  # 5 MB upload limit
+
+    # Session/remember-me cookies: locked down further in ProductionConfig,
+    # where the app is always served over HTTPS.
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = "Lax"
+    REMEMBER_COOKIE_HTTPONLY = True
+    REMEMBER_COOKIE_SAMESITE = "Lax"
+
+    # Cache static assets (compiled CSS, vendored JS, fonts) for a day by
+    # default; ProductionConfig extends this since those files rarely change
+    # between deploys and aren't cache-busted by filename.
+    SEND_FILE_MAX_AGE_DEFAULT = 86400
 
     # Portfolio images are shown on public profiles, so they live under static/.
     PORTFOLIO_UPLOAD_FOLDER = BASE_DIR / "app" / "static" / "uploads" / "portfolio"
@@ -37,6 +52,7 @@ class TestingConfig(Config):
     TESTING = True
     WTF_CSRF_ENABLED = False
     SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
+    RATELIMIT_ENABLED = False
 
     # Route uploads to a throwaway directory so test runs never write into
     # the real instance/ or app/static/ folders used by the dev server.
@@ -49,6 +65,14 @@ class ProductionConfig(Config):
     DEBUG = False
     # SQLALCHEMY_DATABASE_URI is expected to point at PostgreSQL in production
     # via the DATABASE_URL environment variable.
+
+    # Render terminates TLS at its edge and always proxies to the app over
+    # HTTPS, so these are safe unconditionally in production (see the
+    # ProxyFix wiring in app/__init__.py, which makes Flask see the
+    # original https:// scheme rather than the proxy's internal http://).
+    SESSION_COOKIE_SECURE = True
+    REMEMBER_COOKIE_SECURE = True
+    PREFERRED_URL_SCHEME = "https"
 
 
 config = {

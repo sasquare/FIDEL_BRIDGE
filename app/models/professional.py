@@ -8,9 +8,11 @@ class ProfessionalProfile(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), unique=True, nullable=False)
-    category_id = db.Column(db.Integer, db.ForeignKey("categories.id"), nullable=True)
+    category_id = db.Column(db.Integer, db.ForeignKey("categories.id"), nullable=True, index=True)
 
     profession = db.Column(db.String(120), nullable=False)
+    # Not indexed: search filters on these with a "%term%" ILIKE, which a
+    # plain B-tree index can't accelerate anyway.
     city = db.Column(db.String(100), nullable=True)
     state = db.Column(db.String(100), nullable=True)
     bio = db.Column(db.Text, nullable=True)
@@ -23,7 +25,7 @@ class ProfessionalProfile(db.Model):
     available_hours = db.Column(db.String(100), nullable=True)
 
     # Set once an admin reviews uploaded verification documents (Phase 9).
-    is_verified = db.Column(db.Boolean, nullable=False, default=False)
+    is_verified = db.Column(db.Boolean, nullable=False, default=False, index=True)
 
     created_at = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
 

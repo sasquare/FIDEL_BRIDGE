@@ -5,7 +5,7 @@ FIDEL_BRIDGE/
 ├── app/
 │   ├── __init__.py            # Application factory (create_app)
 │   ├── config.py              # Environment-based configuration classes
-│   ├── extensions.py          # Shared Flask extension instances (db, migrate, login_manager)
+│   ├── extensions.py          # Shared Flask extension instances (db, migrate, login_manager, limiter)
 │   ├── seeds.py                # Idempotent reference-data seeding (categories)
 │   ├── blueprints/
 │   │   ├── main/                # Public marketing pages (landing page, etc.)
@@ -53,7 +53,8 @@ FIDEL_BRIDGE/
 │   │   ├── uploads.py         # Secure file upload saving (random filenames, extension allow-list)
 │   │   ├── notifications.py   # notify(user, message, link) helper
 │   │   ├── messaging.py       # unread_message_count(user) helper
-│   │   └── text.py            # slugify(name) - shared by seeds.py and the admin category form
+│   │   ├── text.py            # slugify(name) - shared by seeds.py and the admin category form
+│   │   └── assets.py          # asset_url(filename) - cache-busted static asset URLs
 │   ├── templates/
 │   │   ├── base.html          # Shared HTML shell (head, nav, flash messages, footer, scripts)
 │   │   ├── partials/
@@ -66,8 +67,11 @@ FIDEL_BRIDGE/
 │   │   ├── dashboard/
 │   │   │   └── _shell.html    # Shared responsive dashboard shell (sidebar -> mobile tabs)
 │   │   ├── errors/
+│   │   │   ├── 400.html
 │   │   │   ├── 403.html
 │   │   │   ├── 404.html
+│   │   │   ├── 413.html        # Upload over MAX_CONTENT_LENGTH
+│   │   │   ├── 429.html        # Rate limit exceeded
 │   │   │   └── 500.html
 │   │   ├── main/
 │   │   │   └── index.html     # Landing page
@@ -134,12 +138,14 @@ FIDEL_BRIDGE/
 ├── tests/                     # Pytest test suite
 ├── run.py                     # Local development entry point
 ├── wsgi.py                    # Production entry point (gunicorn)
+├── render.yaml                 # Render Blueprint (web service + managed Postgres)
 ├── requirements.txt           # Production Python dependencies
 ├── requirements-dev.txt       # Adds pytest for local development
 ├── package.json               # Tailwind + vendor asset tooling
 ├── tailwind.config.js         # Design tokens (brand colors, fonts, shadows)
 ├── .flaskenv                  # Local Flask CLI environment variables
-└── .env.example                # Template for secrets (copy to .env)
+├── .env.example                # Template for secrets (copy to .env)
+└── PRODUCTION_CHECKLIST.md    # Pre-launch punch list for a real deployment
 ```
 
 ## Design Decisions
@@ -254,3 +260,27 @@ FIDEL_BRIDGE/
   `app/seeds.py` (default categories) and the admin category form (new
   categories created at runtime), so there's exactly one definition of how
   a category name becomes its slug.
+- **Security headers and `ProductionConfig`'s cookie/HSTS hardening are
+  applied through code, not left to Render's defaults** — a `SECRET_KEY`
+  guard, CSP, and secure-cookie flags all live in `app/__init__.py`/
+  `app/config.py`, so the security posture travels with the repo and isn't
+  dependent on someone remembering to configure the hosting platform
+  correctly.
+- **Rate limiting only on login/registration, not globally strict.** A
+  200/hour default limit exists as a backstop, but the deliberately tight
+  limits (10/min login, 20/hour per registration form) are only on the
+  routes that are actually attractive to automate against (credential
+  stuffing, fake account creation) — browsing, dashboards, and messaging
+  aren't rate-limited beyond the generous default, since throttling those
+  would just degrade the product for real users.
+- **Indexes are added where queries actually filter/join, not everywhere.**
+  `ProfessionalProfile.city`/`state` are deliberately left unindexed since
+  search uses a `%term%` `ILIKE` there, which a B-tree index can't help —
+  adding one would only slow down writes for no read benefit.
+- **Cache-busting via file mtime (`asset_url()`), not a build-time content
+  hash.** A full hashed-filename pipeline (the standard production
+  approach) is more machinery than an MVP with three build assets needs;
+  appending `?v=<mtime>` gets the same practical outcome — long
+  browser-side caching that still picks up changes after every deploy —
+  without adding a manifest file or changing how templates reference
+  assets.

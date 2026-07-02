@@ -12,7 +12,9 @@ class Verification(db.Model):
     __tablename__ = "verifications"
 
     id = db.Column(db.Integer, primary_key=True)
-    professional_profile_id = db.Column(db.Integer, db.ForeignKey("professional_profiles.id"), nullable=False)
+    professional_profile_id = db.Column(
+        db.Integer, db.ForeignKey("professional_profiles.id"), nullable=False, index=True
+    )
 
     document_type = db.Column(db.String(80), nullable=False)
     filename = db.Column(db.String(255), nullable=False)

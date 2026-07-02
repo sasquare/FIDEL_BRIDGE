@@ -33,7 +33,9 @@ class CorporateRequest(db.Model):
     __tablename__ = "corporate_requests"
 
     id = db.Column(db.Integer, primary_key=True)
-    corporate_profile_id = db.Column(db.Integer, db.ForeignKey("corporate_profiles.id"), nullable=False)
+    corporate_profile_id = db.Column(
+        db.Integer, db.ForeignKey("corporate_profiles.id"), nullable=False, index=True
+    )
 
     request_type = db.Column(db.String(30), nullable=False)
     title = db.Column(db.String(150), nullable=False)
@@ -41,7 +43,7 @@ class CorporateRequest(db.Model):
     location = db.Column(db.String(150), nullable=True)
     budget_naira = db.Column(db.Integer, nullable=True)
     preferred_date = db.Column(db.Date, nullable=True)
-    status = db.Column(db.String(20), nullable=False, default=STATUS_PENDING)
+    status = db.Column(db.String(20), nullable=False, default=STATUS_PENDING, index=True)
 
     created_at = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
     updated_at = db.Column(
