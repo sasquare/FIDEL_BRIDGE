@@ -78,4 +78,20 @@
   .card {
     @apply rounded-2xl border border-slate-100 bg-white p-6 shadow-card transition hover:-translate-y-1 hover:shadow-lg;
   }
+
+  /* Subtle dot-grid texture for the hero's corporate slide - stands in for
+     photography (Stripe/Linear-style abstract texture) rather than a stock photo. */
+  .bg-grid-pattern {
+    background-image: radial-gradient(rgba(255, 255, 255, 0.14) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+}
+
+/* Outside any @layer so it always wins the cascade regardless of Tailwind's
+   layer ordering: shortens the hero slider's crossfade for anyone who has
+   asked their OS/browser to reduce motion. */
+@media (prefers-reduced-motion: reduce) {
+  .hero-slide {
+    transition-duration: 1ms !important;
+  }
 }
