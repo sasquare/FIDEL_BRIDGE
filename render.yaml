@@ -11,10 +11,13 @@ services:
     plan: free
     region: oregon
     branch: main
+    # No Node/npm step here: the compiled CSS (app/static/css/output.css),
+    # vendored Alpine.js, and vendored fonts are committed straight into
+    # the repo (see git history), not generated at deploy time - so the
+    # build only needs Python. Run `npm run build` locally and commit the
+    # result whenever app/static/src/input.css or tailwind.config.js change.
     buildCommand: >-
       pip install -r requirements.txt &&
-      npm install &&
-      npm run build &&
       flask db upgrade &&
       flask seed-categories
     startCommand: gunicorn wsgi:app --workers 2 --timeout 60

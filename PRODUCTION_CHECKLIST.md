@@ -93,10 +93,12 @@ domain at the app.
 
 ## 6. Final pre-launch pass
 
-- [ ] Full Pytest suite passes: `pytest` (79 tests as of Phase 9/10).
-- [ ] `npm run build` has been run so `output.css` reflects the latest
-      Tailwind classes (the Render build command does this automatically
-      on every deploy).
+- [ ] Full Pytest suite passes: `pytest` (87 tests as of Phase 11).
+- [ ] `npm run build` has been run **locally** and the resulting
+      `app/static/css/output.css` committed, if any Tailwind classes or
+      `tailwind.config.js` changed since the last deploy. Render's build
+      only runs `pip install` + migrations, not `npm run build` — it
+      deploys whatever compiled CSS is already checked into the repo.
 - [ ] Walk through the full checklist in `INSTALLATION.md` ("Verifying the
       setup") against the live production URL, not just localhost.
 - [ ] Confirm a real, non-default admin account exists and the one you used
