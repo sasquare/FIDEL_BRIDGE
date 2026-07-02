@@ -29,9 +29,12 @@ This repository is being built in phases.
   sorting on search.
 - **Phase 9:** admin dashboard — approve professionals, manage
   categories/users/bookings/corporate requests, and platform reports.
-- **Phase 10 (this phase):** UI polish, security hardening (headers, rate
-  limiting, secure cookies), performance (DB indexes, asset caching), and
-  Render deployment configuration.
+- **Phase 10:** UI polish, security hardening (headers, rate limiting,
+  secure cookies), performance (DB indexes, asset caching), and Render
+  deployment configuration.
+- **Phase 11 (this phase):** self-service password reset ("Forgot
+  password?" on login), closing the account-recovery gap found during a
+  post-Phase-10 security audit.
 
 ## Tech Stack
 

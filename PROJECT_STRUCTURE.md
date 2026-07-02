@@ -22,7 +22,7 @@ FIDEL_BRIDGE/
 │   │       ├── __init__.py
 │   │       └── routes.py
 │   ├── forms/
-│   │   ├── auth.py            # Flask-WTF registration/login forms + validation
+│   │   ├── auth.py            # Flask-WTF registration/login/forgot-password/reset-password forms
 │   │   ├── customer.py        # Customer profile edit form
 │   │   ├── professional.py    # Profile/skill/portfolio/verification-upload forms
 │   │   ├── corporate.py       # Company profile + service-request forms
@@ -54,7 +54,8 @@ FIDEL_BRIDGE/
 │   │   ├── notifications.py   # notify(user, message, link) helper
 │   │   ├── messaging.py       # unread_message_count(user) helper
 │   │   ├── text.py            # slugify(name) - shared by seeds.py and the admin category form
-│   │   └── assets.py          # asset_url(filename) - cache-busted static asset URLs
+│   │   ├── assets.py          # asset_url(filename) - cache-busted static asset URLs
+│   │   └── mail.py            # send_email() - SMTP if configured, else logs (password reset)
 │   ├── templates/
 │   │   ├── base.html          # Shared HTML shell (head, nav, flash messages, footer, scripts)
 │   │   ├── partials/
@@ -80,7 +81,9 @@ FIDEL_BRIDGE/
 │   │   │   ├── register_customer.html
 │   │   │   ├── register_professional.html
 │   │   │   ├── register_corporate.html
-│   │   │   └── login.html
+│   │   │   ├── login.html
+│   │   │   ├── forgot_password.html
+│   │   │   └── reset_password.html
 │   │   ├── browse/
 │   │   │   ├── categories.html
 │   │   │   ├── professionals.html
@@ -284,3 +287,18 @@ FIDEL_BRIDGE/
   browser-side caching that still picks up changes after every deploy —
   without adding a manifest file or changing how templates reference
   assets.
+- **Password reset tokens are a column on `User`, not a separate table.**
+  A user only ever has at most one active reset token at a time (issuing a
+  new one always overwrites the old), so there's no need for a 1:many
+  table — two nullable columns keep the model simple and the "invalidate
+  the old link when a new one is requested" rule is just an overwrite.
+- **The forgot-password route never reveals whether an email has an
+  account.** Same generic-response pattern as login's "Incorrect email or
+  password" — an attacker probing the endpoint learns nothing either way,
+  only that *if* an account exists, an email was sent.
+- **`app/utils/mail.py` logs instead of sending when `MAIL_SERVER` isn't
+  configured**, rather than the password-reset feature requiring a real
+  email provider to even be testable. This keeps local development and
+  CI unblocked by an external dependency the MVP doesn't need yet, while
+  leaving a real SMTP integration as a pure configuration change
+  (`MAIL_*` env vars) instead of a code change when one is needed.

@@ -379,3 +379,47 @@ first try:**
   unchanged, and rate limiting is disabled in `TestingConfig`
   (`RATELIMIT_ENABLED = False`) so it doesn't interfere with tests that
   hit `/auth/login` more than 10 times.
+
+## Phase 11 — Self-Service Password Reset
+
+A manual security audit after Phase 10 (IDOR, CSRF, XSS, admin
+authorization, upload handling — all clean, see the session notes) flagged
+one real gap: there was no way for a user who forgot their password to
+recover their account short of an admin touching the database directly.
+This phase closes that gap.
+
+- Added `User.reset_token` / `reset_token_expires_at` (indexed, 1-hour
+  lifetime) plus `generate_reset_token()` / `clear_reset_token()` /
+  `query_by_valid_reset_token()` helper methods on the model.
+  **Requesting a new reset link invalidates any previous one** — token
+  generation always overwrites the existing token/expiry rather than
+  appending, so an old, possibly-leaked reset email stops working the
+  moment a newer one is issued. Tokens are also **single-use**: a
+  successful reset clears the token immediately.
+- Added `/auth/forgot-password` (request a reset link) and
+  `/auth/reset-password/<token>` (set a new password), both rate-limited
+  (5/hour and 10/hour respectively) alongside the existing login/register
+  limits from Phase 10.
+- **The forgot-password response is identical whether or not the email
+  has an account** ("If an account exists for that email, a reset link
+  has been sent.") — same user-enumeration defense already used on login's
+  generic "Incorrect email or password" message.
+- Added `app/utils/mail.py`: a minimal `send_email()` that uses SMTP if
+  `MAIL_SERVER` is configured (new env vars in `app/config.py`), and
+  otherwise logs the message instead of failing. This means the full
+  reset flow is testable and demoable in development without any real
+  email provider — appropriate for an MVP where wiring up a transactional
+  email service (SendGrid, SES, etc.) is a deploy-time decision, not a
+  code change. `PRODUCTION_CHECKLIST.md` should be updated with real
+  `MAIL_*` credentials before this is relied on in production.
+- Added a "Forgot password?" link to the login page.
+- Extended the Pytest suite with `tests/test_password_reset.py`: generic
+  message for unknown emails, token generation for known emails, a full
+  reset changes the password and old credentials stop working, invalid
+  and expired tokens are rejected, tokens are single-use, and requesting
+  a new link invalidates an older one (87 tests total).
+- Verified live: submitted the forgot-password form, read the real reset
+  link out of the (console-logged) email, followed it, set a new
+  password, confirmed the old password now fails and the new one logs
+  in, and confirmed reusing the same link afterward redirects back to
+  "request a new one" instead of silently working twice.

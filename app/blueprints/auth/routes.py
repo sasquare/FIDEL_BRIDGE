@@ -8,8 +8,10 @@ from app.extensions import db, limiter
 from app.forms.auth import (
     CorporateRegistrationForm,
     CustomerRegistrationForm,
+    ForgotPasswordForm,
     LoginForm,
     ProfessionalRegistrationForm,
+    ResetPasswordForm,
 )
 from app.models import roles
 from app.models.category import Category
@@ -18,6 +20,7 @@ from app.models.customer import CustomerProfile
 from app.models.professional import ProfessionalProfile
 from app.models.user import User
 from app.utils.auth_helpers import dashboard_url_for
+from app.utils.mail import send_email
 
 
 def _is_safe_redirect_target(target):
@@ -161,3 +164,54 @@ def logout():
     logout_user()
     flash("You have been logged out.", "success")
     return redirect(url_for("main.index"))
+
+
+@auth_bp.route("/forgot-password", methods=["GET", "POST"])
+@limiter.limit("5 per hour", methods=["POST"])
+def forgot_password():
+    if current_user.is_authenticated:
+        return redirect(dashboard_url_for(current_user))
+
+    form = ForgotPasswordForm()
+    if form.validate_on_submit():
+        user = User.query.filter_by(email=form.email.data.strip().lower()).first()
+        if user is not None and user.is_active:
+            token = user.generate_reset_token()
+            db.session.commit()
+            reset_url = url_for("auth.reset_password", token=token, _external=True)
+            send_email(
+                user.email,
+                "Reset your FidelBridge password",
+                f"Hi {user.full_name},\n\n"
+                f"Click the link below to set a new password. This link expires in 1 hour.\n\n"
+                f"{reset_url}\n\n"
+                f"If you didn't request this, you can safely ignore this email.",
+            )
+        # Same message regardless of whether the email exists, so this
+        # route can't be used to check which emails have an account.
+        flash("If an account exists for that email, a reset link has been sent.", "success")
+        return redirect(url_for("auth.login"))
+
+    return render_template("auth/forgot_password.html", form=form)
+
+
+@auth_bp.route("/reset-password/<token>", methods=["GET", "POST"])
+@limiter.limit("10 per hour", methods=["POST"])
+def reset_password(token):
+    if current_user.is_authenticated:
+        return redirect(dashboard_url_for(current_user))
+
+    user = User.query_by_valid_reset_token(token)
+    if user is None:
+        flash("That reset link is invalid or has expired. Please request a new one.", "error")
+        return redirect(url_for("auth.forgot_password"))
+
+    form = ResetPasswordForm()
+    if form.validate_on_submit():
+        user.set_password(form.password.data)
+        user.clear_reset_token()
+        db.session.commit()
+        flash("Your password has been reset. Please log in.", "success")
+        return redirect(url_for("auth.login"))
+
+    return render_template("auth/reset_password.html", form=form)

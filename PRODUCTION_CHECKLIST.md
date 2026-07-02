@@ -18,6 +18,12 @@ domain at the app.
 - [ ] `.env` / `.flaskenv` are for local development only and are
       gitignored — nothing in them is deployed. Real config on Render comes
       entirely from dashboard/`render.yaml` environment variables.
+- [ ] Set real `MAIL_SERVER`/`MAIL_PORT`/`MAIL_USERNAME`/`MAIL_PASSWORD`/
+      `MAIL_DEFAULT_SENDER` env vars (a transactional email provider like
+      SendGrid, Postmark, or SES's SMTP endpoint all work). Without these,
+      `app/utils/mail.py` falls back to logging password-reset emails
+      instead of sending them — fine for development, but it means real
+      users would never receive their reset link in production.
 
 ## 2. Database
 

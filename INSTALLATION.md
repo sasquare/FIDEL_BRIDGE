@@ -219,6 +219,15 @@ Visit **http://127.0.0.1:5000** — you should see the FidelBridge landing page.
 - Reload any page and check that `/static/css/output.css` is requested
   with a `?v=<number>` query string, and that its response includes a
   `Cache-Control: public, max-age=86400` header.
+- On `/auth/login`, click "Forgot password?", submit your email, and
+  confirm the generic "If an account exists..." message shows (try both
+  a real and a made-up email — the message is identical either way).
+  Since `MAIL_SERVER` isn't set locally, find the reset link in your
+  terminal's Flask log instead of an inbox, follow it, set a new
+  password, and confirm you can log in with it (and not the old one).
+- Try visiting that same reset link a second time after using it once —
+  it should redirect to "request a new one" instead of letting you reset
+  the password again.
 
 ## Running tests
 
@@ -226,13 +235,13 @@ Visit **http://127.0.0.1:5000** — you should see the FidelBridge landing page.
 pytest
 ```
 
-All tests should pass (79 as of Phase 10, across `tests/test_landing_page.py`,
+All tests should pass (87 as of Phase 11, across `tests/test_landing_page.py`,
 `tests/test_auth.py`, `tests/test_browse.py`, `tests/test_customer.py`,
 `tests/test_professional.py`, `tests/test_corporate.py`,
 `tests/test_booking.py`, `tests/test_messaging.py`, `tests/test_reviews.py`,
-and `tests/test_admin.py`). Rate limiting is disabled in the test config
-(`RATELIMIT_ENABLED = False`) so tests that log in more than 10 times don't
-trip the production rate limit.
+`tests/test_admin.py`, and `tests/test_password_reset.py`). Rate limiting is
+disabled in the test config (`RATELIMIT_ENABLED = False`) so tests that log
+in more than 10 times don't trip the production rate limit.
 
 ## Deploying to Render
 

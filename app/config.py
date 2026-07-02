@@ -43,6 +43,16 @@ class Config:
     ALLOWED_IMAGE_EXTENSIONS = {"png", "jpg", "jpeg"}
     ALLOWED_DOCUMENT_EXTENSIONS = {"png", "jpg", "jpeg", "pdf"}
 
+    # Optional outbound email (password reset). If MAIL_SERVER isn't set,
+    # app/utils/mail.py logs the message instead of sending it, so the
+    # reset flow works locally without real SMTP credentials.
+    MAIL_SERVER = os.environ.get("MAIL_SERVER")
+    MAIL_PORT = int(os.environ.get("MAIL_PORT", 587))
+    MAIL_USE_TLS = os.environ.get("MAIL_USE_TLS", "true").lower() == "true"
+    MAIL_USERNAME = os.environ.get("MAIL_USERNAME")
+    MAIL_PASSWORD = os.environ.get("MAIL_PASSWORD")
+    MAIL_DEFAULT_SENDER = os.environ.get("MAIL_DEFAULT_SENDER", "no-reply@fidelbridge.com")
+
 
 class DevelopmentConfig(Config):
     DEBUG = True

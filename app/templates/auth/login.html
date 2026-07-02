@@ -14,7 +14,10 @@
       {{ render_form_errors(form) }}
       {{ render_field(form.email) }}
       {{ render_field(form.password) }}
-      {{ render_checkbox(form.remember_me) }}
+      <div class="flex items-center justify-between">
+        {{ render_checkbox(form.remember_me) }}
+        <a href="{{ url_for('auth.forgot_password') }}" class="text-sm font-semibold text-brand-700 hover:underline">Forgot password?</a>
+      </div>
       {{ form.submit(class_="btn-primary mt-2 w-full") }}
     </form>
 

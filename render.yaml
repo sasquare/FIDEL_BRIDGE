@@ -32,6 +32,19 @@ services:
         fromDatabase:
           name: fidelbridge-db
           property: connectionString
+      # Outbound email (password reset). sync: false means Render prompts
+      # for these in the dashboard instead of storing them in this file -
+      # appropriate since they're provider credentials, not build config.
+      # Until set, app/utils/mail.py logs reset emails instead of sending
+      # them, so the app still runs without these.
+      - key: MAIL_SERVER
+        sync: false
+      - key: MAIL_USERNAME
+        sync: false
+      - key: MAIL_PASSWORD
+        sync: false
+      - key: MAIL_DEFAULT_SENDER
+        sync: false
 
 databases:
   - name: fidelbridge-db
