@@ -72,7 +72,17 @@ This populates Electricians, Plumbers, Carpenters, and the other default
 categories. It's safe to re-run — it skips categories that already exist.
 Professional registration requires at least one category to exist.
 
-## 8. Run the app
+## 8. Create your first admin account
+
+```bash
+flask create-admin
+```
+
+This prompts for an email, full name, and password (hidden input, confirmed
+twice). There is no public admin sign-up route — this CLI command is the
+only way to create an admin account.
+
+## 9. Run the app
 
 ```bash
 flask run
@@ -165,6 +175,35 @@ Visit **http://127.0.0.1:5000** — you should see the FidelBridge landing page.
   Rating** filter, and each **Sort By** option (especially "Highest
   Rated") with a few reviewed professionals in the database, and confirm
   the results and their order change as expected.
+- Log in with the admin account you created via `flask create-admin` and
+  confirm `/admin/dashboard` loads with real stats (total users, pending
+  verifications, pending corporate requests, active bookings).
+- From `/admin/professionals`, open a pending professional and click
+  "Approve Professional" — confirm the badge flips to "Verified", the
+  button becomes "Revoke Verification", and the professional receives a
+  notification.
+- Upload a verification document as that professional, then as admin
+  Approve one document and Reject another (with a reason). Confirm the
+  approved one shows "Approved" and the rejected one shows the reason.
+- From `/admin/categories`, create a new category, confirm it appears in
+  the list and its slug looks right, then delete it — it should disappear.
+- Try deleting a category that has a professional assigned to it — it
+  should be blocked with a clear error instead of silently succeeding.
+- From `/admin/users`, deactivate a customer or professional account, then
+  try to log in as that user — login should be blocked. Reactivate it and
+  confirm login works again.
+- Try deactivating another admin account — it should 400, not succeed.
+- From `/admin/bookings`, open a booking and use the admin "Cancel this
+  booking" override — confirm both the customer and professional get a
+  notification and the status updates to "Cancelled".
+- From `/admin/corporate-requests`, open a request and change its status —
+  confirm the corporate account gets a notification reflecting the new
+  status.
+- Visit `/admin/reports` and confirm the stat cards and bar charts reflect
+  the current state of the database (e.g. verified professional count,
+  bookings by status).
+- Confirm a non-admin account gets a 403 when visiting any `/admin/*` URL
+  directly.
 
 ## Running tests
 
@@ -172,11 +211,11 @@ Visit **http://127.0.0.1:5000** — you should see the FidelBridge landing page.
 pytest
 ```
 
-All tests should pass (68 as of Phase 8, across `tests/test_landing_page.py`,
+All tests should pass (79 as of Phase 9, across `tests/test_landing_page.py`,
 `tests/test_auth.py`, `tests/test_browse.py`, `tests/test_customer.py`,
 `tests/test_professional.py`, `tests/test_corporate.py`,
-`tests/test_booking.py`, `tests/test_messaging.py`, and
-`tests/test_reviews.py`).
+`tests/test_booking.py`, `tests/test_messaging.py`, `tests/test_reviews.py`,
+and `tests/test_admin.py`).
 
 ## Common Errors & Troubleshooting
 

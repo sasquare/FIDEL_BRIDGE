@@ -1,0 +1,105 @@
+{% extends "dashboard/_shell.html" %}
+{% block title %}Reports — FidelBridge{% endblock %}
+
+{% block dashboard_content %}
+<span class="eyebrow">Insights</span>
+<h1 class="mt-3 text-3xl font-extrabold text-brand-900">Platform Reports</h1>
+
+<div class="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+  <div class="card !p-6">
+    <p class="text-sm font-semibold text-slate-500">Verified Professionals</p>
+    <p class="mt-2 text-3xl font-extrabold text-brand-900">{{ verified_professionals }}<span class="text-base font-medium text-slate-400">/{{ total_professionals }}</span></p>
+  </div>
+  <div class="card !p-6">
+    <p class="text-sm font-semibold text-slate-500">Average Platform Rating</p>
+    <p class="mt-2 text-3xl font-extrabold text-brand-900">{{ "%.1f"|format(average_platform_rating) if average_platform_rating else "—" }}</p>
+  </div>
+  <div class="card !p-6">
+    <p class="text-sm font-semibold text-slate-500">Total Reviews</p>
+    <p class="mt-2 text-3xl font-extrabold text-brand-900">{{ total_reviews }}</p>
+  </div>
+  <div class="card !p-6">
+    <p class="text-sm font-semibold text-slate-500">Completed Booking Value</p>
+    <p class="mt-2 text-2xl font-extrabold text-brand-900">₦{{ "{:,}".format(completed_bookings_value) }}</p>
+  </div>
+</div>
+
+<div class="mt-10 grid gap-8 lg:grid-cols-2">
+  <div class="card !p-6">
+    <h2 class="text-lg font-semibold text-brand-900">Users by Role</h2>
+    <div class="mt-5 flex flex-col gap-4">
+      {% set max_users = users_by_role.values()|list|max if users_by_role else 1 %}
+      {% for role in ("customer", "professional", "corporate", "admin") %}
+      {% set count = users_by_role.get(role, 0) %}
+      <div>
+        <div class="flex items-center justify-between text-sm">
+          <span class="font-medium capitalize text-slate-700">{{ role }}</span>
+          <span class="text-slate-500">{{ count }}</span>
+        </div>
+        <div class="mt-1.5 h-2 w-full overflow-hidden rounded-full bg-slate-100">
+          <div class="h-2 rounded-full bg-brand-700" style="width: {{ (count / max_users * 100) if max_users else 0 }}%"></div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="card !p-6">
+    <h2 class="text-lg font-semibold text-brand-900">Bookings by Status</h2>
+    <div class="mt-5 flex flex-col gap-4">
+      {% set max_bookings = bookings_by_status.values()|list|max if bookings_by_status else 1 %}
+      {% for status in ("pending", "accepted", "in_progress", "completed", "rejected", "cancelled") %}
+      {% set count = bookings_by_status.get(status, 0) %}
+      <div>
+        <div class="flex items-center justify-between text-sm">
+          <span class="font-medium capitalize text-slate-700">{{ status.replace("_", " ") }}</span>
+          <span class="text-slate-500">{{ count }}</span>
+        </div>
+        <div class="mt-1.5 h-2 w-full overflow-hidden rounded-full bg-slate-100">
+          <div class="h-2 rounded-full bg-brand-700" style="width: {{ (count / max_bookings * 100) if max_bookings else 0 }}%"></div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="card !p-6">
+    <h2 class="text-lg font-semibold text-brand-900">Corporate Requests by Status</h2>
+    <div class="mt-5 flex flex-col gap-4">
+      {% set max_requests = corporate_requests_by_status.values()|list|max if corporate_requests_by_status else 1 %}
+      {% for status, label in corporate_request_status_labels.items() %}
+      {% set count = corporate_requests_by_status.get(status, 0) %}
+      <div>
+        <div class="flex items-center justify-between text-sm">
+          <span class="font-medium text-slate-700">{{ label }}</span>
+          <span class="text-slate-500">{{ count }}</span>
+        </div>
+        <div class="mt-1.5 h-2 w-full overflow-hidden rounded-full bg-slate-100">
+          <div class="h-2 rounded-full bg-brand-700" style="width: {{ (count / max_requests * 100) if max_requests else 0 }}%"></div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="card !p-6">
+    <h2 class="text-lg font-semibold text-brand-900">Top Categories by Professionals</h2>
+    <div class="mt-5 flex flex-col gap-4">
+      {% set max_top = top_categories[0][1] if top_categories and top_categories[0][1] else 1 %}
+      {% for name, total in top_categories %}
+      <div>
+        <div class="flex items-center justify-between text-sm">
+          <span class="font-medium text-slate-700">{{ name }}</span>
+          <span class="text-slate-500">{{ total }}</span>
+        </div>
+        <div class="mt-1.5 h-2 w-full overflow-hidden rounded-full bg-slate-100">
+          <div class="h-2 rounded-full bg-amber-500" style="width: {{ (total / max_top * 100) if max_top else 0 }}%"></div>
+        </div>
+      </div>
+      {% else %}
+      <p class="text-sm italic text-slate-400">No categories yet.</p>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -253,3 +253,61 @@ first try:**
   before completion or on a second attempt), the review showing up on the
   public profile with the correct average, the review notification, and
   the new minimum-rating/sort-by/state search behavior (68 tests total).
+
+## Phase 9 — Admin Dashboard
+
+- Added an `admin` blueprint (`/admin/*`), gated by `role_required("admin")`,
+  covering trust & safety, catalog management, account moderation, booking
+  oversight, corporate request fulfillment, and platform reporting.
+- **Professionals & verification**: a filterable (pending/verified/all)
+  professional list, a detail page with Approve/Revoke Verification, and
+  per-document Approve/Reject on uploaded verification files (rejection
+  requires an `admin_notes` reason). Approving/revoking notifies the
+  professional, linking to their public profile.
+- **Categories**: full CRUD (`/admin/categories`) reusing the same
+  `slugify()` helper (now moved to `app/utils/text.py` so both `seeds.py`
+  and the admin form share one implementation instead of duplicating it).
+  Deleting a category is blocked with a flash error if any professional is
+  still assigned to it, rather than silently orphaning their `category_id`.
+- **Users**: a searchable (name/email) and role-filterable list with
+  Deactivate/Reactivate. Deactivating sets `is_active_account = False`,
+  which already blocked login before this phase (Phase 2) — the admin UI
+  is new, the enforcement was not. **Admins cannot deactivate other admins**
+  through this UI (400) — there's no public admin sign-up route (see
+  `flask create-admin` below), so removing the last admin account this way
+  would be an unrecoverable lockout.
+- **Bookings**: a status-filterable list, a detail page, and an admin-only
+  "Cancel this booking" override for bookings not already
+  completed/cancelled/rejected — notifies both the customer and the
+  professional. This is a moderation escape hatch (e.g. a dispute), on top
+  of the customer's own Phase 6 cancel flow, not a replacement for it.
+- **Corporate requests**: a status-filterable list and a detail page with a
+  full status-update form (Pending/In Progress/Completed/Cancelled). Unlike
+  every other status transition in the app (booking accept/reject/start/
+  complete, corporate request cancel), this is the one deliberately generic
+  "set status to X" endpoint — admin's role here is total oversight/
+  fulfillment tracking across all four states, not a constrained
+  single-purpose action, so a generic endpoint (with server-side validation
+  that the posted value is one of the four valid statuses) is the right
+  shape rather than four near-identical single-purpose routes.
+- **Reports** (`/admin/reports`): users by role, bookings by status,
+  corporate requests by status, and top categories by professional count —
+  each rendered as a simple CSS width-percentage bar chart (no JS charting
+  library, consistent with the rest of the app's "plain HTML/CSS where it's
+  good enough" approach), plus headline stats (verified professionals,
+  average platform rating, total reviews, completed booking value).
+- Added a `flask create-admin` CLI command (interactive prompts for email /
+  full name / password, with hidden + confirmed password input) — there is
+  intentionally no public admin registration route, so this is the only way
+  to create the first admin account.
+- No new migration was required — `flask db migrate` reported "No changes
+  in schema detected"; every model Phase 9 needed (`User`, `Category`,
+  `ProfessionalProfile`, `Verification`, `Booking`, `CorporateRequest`,
+  `Review`) already existed from earlier phases.
+- Extended the Pytest suite with `tests/test_admin.py` covering access
+  control (non-admins get 403), professional verification approval,
+  verification document approve/reject, category create/delete and the
+  delete-blocked-by-assigned-professionals rule, user deactivate/reactivate
+  and the can't-deactivate-another-admin rule, admin booking view/cancel,
+  corporate request status updates (with notification), and the reports
+  page (79 tests total).

@@ -25,8 +25,11 @@ This repository is being built in phases.
   jobs, and in-app notifications.
 - **Phase 7:** messaging — conversation list, chat interface, unread
   messages, and basic real-time updates (polling).
-- **Phase 8 (this phase):** ratings & reviews, plus location/category
-  filters and sorting on search.
+- **Phase 8:** ratings & reviews, plus location/category filters and
+  sorting on search.
+- **Phase 9 (this phase):** admin dashboard — approve professionals,
+  manage categories/users/bookings/corporate requests, and platform
+  reports.
 
 ## Tech Stack
 
@@ -56,6 +59,7 @@ npm run build                   # compiles Tailwind CSS
 cp .env.example .env            # then edit SECRET_KEY
 flask db upgrade                # creates instance/fidelbridge.db
 flask seed-categories           # populates default service categories
+flask create-admin              # creates your first admin account (interactive)
 
 flask run
 ```

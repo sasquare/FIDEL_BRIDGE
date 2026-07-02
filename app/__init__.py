@@ -2,6 +2,7 @@
 import os
 from datetime import datetime
 
+import click
 from flask import Flask, render_template
 
 from app.config import config
@@ -72,6 +73,7 @@ def register_context_processors(app):
 
 
 def register_blueprints(app):
+    from app.blueprints.admin import admin_bp
     from app.blueprints.auth import auth_bp
     from app.blueprints.browse import browse_bp
     from app.blueprints.corporate import corporate_bp
@@ -89,6 +91,7 @@ def register_blueprints(app):
     app.register_blueprint(corporate_bp)
     app.register_blueprint(notifications_bp)
     app.register_blueprint(messages_bp)
+    app.register_blueprint(admin_bp)
 
 
 def register_cli_commands(app):
@@ -99,6 +102,27 @@ def register_cli_commands(app):
 
         created = seed_categories()
         print(f"Seeded {created} new categories.")
+
+    @app.cli.command("create-admin")
+    @click.option("--email", prompt=True)
+    @click.option("--full-name", prompt="Full name")
+    @click.option("--password", prompt=True, hide_input=True, confirmation_prompt=True)
+    def create_admin_command(email, full_name, password):
+        """Create an admin account. There's no public admin sign-up route."""
+        from app.extensions import db
+        from app.models import roles
+        from app.models.user import User
+
+        email = email.strip().lower()
+        if User.query.filter_by(email=email).first():
+            print(f"A user with email {email} already exists.")
+            return
+
+        admin = User(full_name=full_name.strip(), email=email, role=roles.ADMIN)
+        admin.set_password(password)
+        db.session.add(admin)
+        db.session.commit()
+        print(f"Admin account created for {email}.")
 
 
 def register_error_handlers(app):

@@ -1,0 +1,43 @@
+{% extends "dashboard/_shell.html" %}
+{% block title %}Manage Bookings — FidelBridge{% endblock %}
+
+{% block dashboard_content %}
+<span class="eyebrow">Oversight</span>
+<h1 class="mt-3 text-3xl font-extrabold text-brand-900">Bookings</h1>
+
+<div class="mt-6 flex flex-wrap gap-2">
+  <a href="{{ url_for('admin.bookings') }}" class="rounded-full px-4 py-2 text-sm font-semibold {{ 'bg-brand-700 text-white' if not status_filter else 'bg-slate-100 text-slate-600 hover:bg-slate-200' }}">All</a>
+  {% for status in all_statuses %}
+  <a
+    href="{{ url_for('admin.bookings', status=status) }}"
+    class="rounded-full px-4 py-2 text-sm font-semibold capitalize {{ 'bg-brand-700 text-white' if status_filter == status else 'bg-slate-100 text-slate-600 hover:bg-slate-200' }}"
+  >
+    {{ status.replace("_", " ") }}
+  </a>
+  {% endfor %}
+</div>
+
+{% if bookings %}
+<div class="mt-6 flex flex-col gap-3">
+  {% for booking in bookings %}
+  <a href="{{ url_for('admin.booking_detail', booking_id=booking.id) }}" class="card flex flex-wrap items-center justify-between gap-3 !p-5">
+    <div>
+      <p class="font-semibold text-brand-900">{{ booking.title }}</p>
+      <p class="mt-1 text-xs text-slate-500">
+        {{ booking.customer.user.full_name }} &rarr; {{ booking.professional.user.full_name }} &middot; {{ booking.created_at.strftime("%d %b %Y") }}
+      </p>
+    </div>
+    <span class="rounded-full px-3 py-1 text-xs font-semibold
+      {{ 'bg-emerald-50 text-emerald-700' if booking.status == 'completed'
+         else 'bg-red-50 text-red-700' if booking.status in ('cancelled', 'rejected')
+         else 'bg-brand-50 text-brand-700' if booking.status in ('accepted', 'in_progress')
+         else 'bg-amber-50 text-amber-700' }}">
+      {{ booking.status_label }}
+    </span>
+  </a>
+  {% endfor %}
+</div>
+{% else %}
+<p class="mt-10 text-sm italic text-slate-400">No bookings in this view.</p>
+{% endif %}
+{% endblock %}

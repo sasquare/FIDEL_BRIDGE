@@ -1,6 +1,7 @@
 """Reference/lookup data seeding, run via `flask seed-categories`."""
 from app.extensions import db
 from app.models.category import Category
+from app.utils.text import slugify
 
 CATEGORIES = [
     ("Electricians", "M13 10V3L4 14h7v7l9-11h-7z", "Wiring, installations and electrical repairs."),
@@ -16,10 +17,6 @@ CATEGORIES = [
     ("Tutors", "M12 14l9-5-9-5-9 5 9 5z M12 14l6.16-3.42A12.02 12.02 0 0112 21a12.02 12.02 0 01-6.16-10.42L12 14z", "Private lessons and exam preparation."),
     ("Legal & Accounting", "M12 8c-3.5 0-6 1.5-6 4s2.5 4 6 4 6-1.5 6-4-2.5-4-6-4z M12 3v5m0 8v5", "Legal advice, bookkeeping and tax filing."),
 ]
-
-
-def slugify(name):
-    return name.lower().replace(" & ", "-").replace(" ", "-")
 
 
 def seed_categories():

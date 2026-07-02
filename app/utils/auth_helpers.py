@@ -6,7 +6,7 @@ _DASHBOARD_ENDPOINTS = {
     roles.CUSTOMER: "customer.dashboard",
     roles.PROFESSIONAL: "professional.dashboard",
     roles.CORPORATE: "corporate.dashboard",
-    roles.ADMIN: "main.index",  # Admin dashboard is added in Phase 9.
+    roles.ADMIN: "admin.dashboard",
 }
 
 

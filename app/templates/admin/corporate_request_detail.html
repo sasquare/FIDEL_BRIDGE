@@ -1,0 +1,60 @@
+{% extends "dashboard/_shell.html" %}
+{% block title %}{{ service_request.title }} — Admin — FidelBridge{% endblock %}
+
+{% block dashboard_content %}
+<a href="{{ url_for('admin.corporate_requests') }}" class="text-sm font-semibold text-slate-500 hover:text-brand-700">&larr; Back to corporate requests</a>
+
+<div class="card mt-6 !p-8">
+  <div class="flex flex-wrap items-start justify-between gap-4">
+    <div>
+      <span class="eyebrow">{{ service_request.corporate.company_name }} &middot; {{ service_request.type_label }}</span>
+      <h1 class="mt-2 text-2xl font-extrabold text-brand-900">{{ service_request.title }}</h1>
+      <p class="mt-1 text-sm text-slate-500">Submitted {{ service_request.created_at.strftime("%d %b %Y") }}</p>
+    </div>
+    <span class="rounded-full px-3 py-1.5 text-sm font-semibold
+      {{ 'bg-emerald-50 text-emerald-700' if service_request.status == 'completed'
+         else 'bg-red-50 text-red-700' if service_request.status == 'cancelled'
+         else 'bg-brand-50 text-brand-700' if service_request.status == 'in_progress'
+         else 'bg-amber-50 text-amber-700' }}">
+      {{ service_request.status_label }}
+    </span>
+  </div>
+
+  <div class="mt-8 grid gap-4 border-t border-slate-100 pt-8 sm:grid-cols-3">
+    <div>
+      <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Location</p>
+      <p class="mt-1 text-sm font-semibold text-brand-900">{{ service_request.location or "Not specified" }}</p>
+    </div>
+    <div>
+      <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Estimated Budget</p>
+      <p class="mt-1 text-sm font-semibold text-brand-900">
+        {{ "₦{:,}".format(service_request.budget_naira) if service_request.budget_naira else "Not specified" }}
+      </p>
+    </div>
+    <div>
+      <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Preferred Date</p>
+      <p class="mt-1 text-sm font-semibold text-brand-900">
+        {{ service_request.preferred_date.strftime("%d %b %Y") if service_request.preferred_date else "Flexible" }}
+      </p>
+    </div>
+  </div>
+
+  <div class="mt-8 border-t border-slate-100 pt-8">
+    <h2 class="text-sm font-semibold uppercase tracking-wide text-slate-400">Details</h2>
+    <p class="mt-3 whitespace-pre-line leading-relaxed text-slate-600">{{ service_request.description }}</p>
+  </div>
+
+  <div class="mt-8 border-t border-slate-100 pt-8">
+    <h2 class="text-sm font-semibold uppercase tracking-wide text-slate-400">Update Status</h2>
+    <form method="POST" action="{{ url_for('admin.update_corporate_request_status', request_id=service_request.id) }}" class="mt-3 flex flex-wrap items-center gap-3">
+      {{ status_form.hidden_tag() }}
+      <select name="status" class="rounded-xl border border-slate-200 px-4 py-2.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+        {% for value, label in status_choices %}
+        <option value="{{ value }}" {{ "selected" if value == service_request.status else "" }}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit" class="btn-primary">Update</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

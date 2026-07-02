@@ -15,7 +15,10 @@ FIDEL_BRIDGE/
 │   │   ├── professional/         # Professional dashboard, profile, bookings (protected, role=professional)
 │   │   ├── corporate/            # Corporate dashboard (protected, role=corporate)
 │   │   ├── notifications/        # Notification inbox (protected, any authenticated role)
-│   │   └── messages/              # Conversations + chat (protected, any authenticated role)
+│   │   ├── messages/              # Conversations + chat (protected, any authenticated role)
+│   │   │   ├── __init__.py
+│   │   │   └── routes.py
+│   │   └── admin/                 # Admin dashboard (protected, role=admin)
 │   │       ├── __init__.py
 │   │       └── routes.py
 │   ├── forms/
@@ -25,7 +28,8 @@ FIDEL_BRIDGE/
 │   │   ├── corporate.py       # Company profile + service-request forms
 │   │   ├── booking.py         # Booking request form
 │   │   ├── message.py         # Chat message form
-│   │   └── review.py          # Star rating + comment form
+│   │   ├── review.py          # Star rating + comment form
+│   │   └── category.py        # Admin category create/edit form
 │   ├── models/
 │   │   ├── __init__.py        # Imports every model so Flask-Migrate sees them
 │   │   ├── roles.py           # Role constants (customer/professional/corporate/admin)
@@ -48,7 +52,8 @@ FIDEL_BRIDGE/
 │   │   ├── auth_helpers.py    # dashboard_url_for(user) role -> dashboard redirect
 │   │   ├── uploads.py         # Secure file upload saving (random filenames, extension allow-list)
 │   │   ├── notifications.py   # notify(user, message, link) helper
-│   │   └── messaging.py       # unread_message_count(user) helper
+│   │   ├── messaging.py       # unread_message_count(user) helper
+│   │   └── text.py            # slugify(name) - shared by seeds.py and the admin category form
 │   ├── templates/
 │   │   ├── base.html          # Shared HTML shell (head, nav, flash messages, footer, scripts)
 │   │   ├── partials/
@@ -98,9 +103,21 @@ FIDEL_BRIDGE/
 │   │   │   └── request_detail.html
 │   │   ├── notifications/
 │   │   │   └── index.html         # Notification inbox, mark-one/mark-all read
-│   │   └── messages/
-│   │       ├── conversations.html # List, sorted by recency, with unread badges
-│   │       └── conversation.html  # Chat thread + send form + polling script
+│   │   ├── messages/
+│   │   │   ├── conversations.html # List, sorted by recency, with unread badges
+│   │   │   └── conversation.html  # Chat thread + send form + polling script
+│   │   └── admin/
+│   │       ├── dashboard.html             # Platform stats + pending verifications + recent users
+│   │       ├── professionals.html         # Status-filterable list
+│   │       ├── professional_detail.html   # Approve/Revoke + per-document Approve/Reject
+│   │       ├── categories.html            # Add-category form + list with Edit/Delete
+│   │       ├── category_form.html         # Edit-category page
+│   │       ├── users.html                 # Search/filter + Deactivate/Reactivate
+│   │       ├── bookings.html              # Status-filterable list
+│   │       ├── booking_detail.html        # Detail + admin-override cancel
+│   │       ├── corporate_requests.html    # Status-filterable list
+│   │       ├── corporate_request_detail.html  # Detail + full status-update form
+│   │       └── reports.html               # Stat cards + CSS bar-chart breakdowns
 │   └── static/
 │       ├── src/input.css      # Tailwind source (edit this)
 │       ├── css/output.css     # Compiled Tailwind CSS (generated, do not edit)
@@ -133,8 +150,8 @@ FIDEL_BRIDGE/
 - **Blueprints** separate concerns by user-facing area: `main` (public
   pages), `auth` (registration/login/logout), `browse` (public category and
   professional search — not behind login, since discovery should be open),
-  and one blueprint per role (`customer`, `professional`, `corporate`) for
-  their dashboards. `admin` is added in Phase 9.
+  one blueprint per role (`customer`, `professional`, `corporate`) for their
+  dashboards, and `admin` for platform-wide moderation and reporting.
 - **One `users` table, not a `Role` table**: `role` is a plain string column
   with a DB-level check constraint (`app/models/roles.py`). With a small,
   fixed set of roles this is simpler than a many-to-many `Role` table and
@@ -190,9 +207,13 @@ FIDEL_BRIDGE/
   preferred date, status) — only the label differs — so a single table with
   a type discriminator avoids duplicating the same schema three times.
 - **Corporates can only cancel a pending request**, not move it to
-  in-progress/completed themselves — that's fulfillment/admin territory
-  (Phase 9). The cancel route 400s if called on a non-pending request
-  instead of silently allowing it.
+  in-progress/completed themselves — that's fulfillment/admin territory.
+  The cancel route 400s if called on a non-pending request instead of
+  silently allowing it. Admin's corporate-request status update, by
+  contrast, is a single generic "set status to X" endpoint — the one
+  deliberate exception to the rest of the app's one-route-per-transition
+  pattern, because admin's job here genuinely is unconstrained oversight
+  across all four statuses, not a specific business action.
 - **Messaging is gated on an accepted booking**, same rule as the phone
   reveal — `Conversation.booking_id` is unique, so each job gets at most
   one thread, found-or-created via `/messages/start/<booking_id>`.
@@ -218,3 +239,18 @@ FIDEL_BRIDGE/
   into `app/static` via `npm install` (postinstall script) instead of loaded
   from a public CDN, avoiding a runtime dependency on third-party
   availability.
+- **No public admin registration route.** The only way to create an admin
+  account is the `flask create-admin` CLI command, run by whoever controls
+  the server/deploy environment. Admins also can't deactivate other admins
+  through the admin Users UI (400) — combined with no public sign-up, that
+  would make an accidental full lockout unrecoverable without direct
+  database access.
+- **Deleting a category is blocked, not cascaded**, if any professional is
+  still assigned to it — silently nulling out `category_id` (or cascading
+  the delete) would either break a professional's profile or hide their
+  existing category unexpectedly; an admin has to reassign or remove those
+  professionals first.
+- **`slugify()` lives in `app/utils/text.py`**, shared by both
+  `app/seeds.py` (default categories) and the admin category form (new
+  categories created at runtime), so there's exactly one definition of how
+  a category name becomes its slug.

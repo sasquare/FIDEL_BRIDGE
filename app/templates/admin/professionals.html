@@ -1,0 +1,41 @@
+{% extends "dashboard/_shell.html" %}
+{% block title %}Manage Professionals — FidelBridge{% endblock %}
+
+{% block dashboard_content %}
+<span class="eyebrow">Trust &amp; Safety</span>
+<h1 class="mt-3 text-3xl font-extrabold text-brand-900">Professionals</h1>
+
+<div class="mt-6 flex flex-wrap gap-2">
+  {% for key, label in [("pending", "Pending"), ("verified", "Verified"), ("all", "All")] %}
+  <a
+    href="{{ url_for('admin.professionals', status=key) }}"
+    class="rounded-full px-4 py-2 text-sm font-semibold {{ 'bg-brand-700 text-white' if status_filter == key else 'bg-slate-100 text-slate-600 hover:bg-slate-200' }}"
+  >
+    {{ label }}
+  </a>
+  {% endfor %}
+</div>
+
+{% if professionals %}
+<div class="mt-6 flex flex-col gap-3">
+  {% for professional in professionals %}
+  <a href="{{ url_for('admin.professional_detail', professional_id=professional.id) }}" class="card flex flex-wrap items-center justify-between gap-3 !p-5">
+    <div>
+      <p class="font-semibold text-brand-900">{{ professional.user.full_name }}</p>
+      <p class="mt-1 text-xs text-slate-500">
+        {{ professional.profession }} &middot; {{ professional.category.name if professional.category else "No category" }} &middot; {{ professional.city or "No location" }}
+      </p>
+    </div>
+    <div class="flex items-center gap-3">
+      <span class="text-xs text-slate-400">{{ professional.verifications|length }} doc{{ "s" if professional.verifications|length != 1 else "" }}</span>
+      <span class="rounded-full px-3 py-1 text-xs font-semibold {{ 'bg-emerald-50 text-emerald-700' if professional.is_verified else 'bg-amber-50 text-amber-700' }}">
+        {{ "Verified" if professional.is_verified else "Pending" }}
+      </span>
+    </div>
+  </a>
+  {% endfor %}
+</div>
+{% else %}
+<p class="mt-10 text-sm italic text-slate-400">No professionals in this view.</p>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,66 @@
+{% extends "dashboard/_shell.html" %}
+{% block title %}{{ booking.title }} — Admin — FidelBridge{% endblock %}
+
+{% block dashboard_content %}
+<a href="{{ url_for('admin.bookings') }}" class="text-sm font-semibold text-slate-500 hover:text-brand-700">&larr; Back to bookings</a>
+
+<div class="card mt-6 !p-8">
+  <div class="flex flex-wrap items-start justify-between gap-4">
+    <div>
+      <span class="eyebrow">{{ booking.customer.user.full_name }} &rarr; {{ booking.professional.user.full_name }}</span>
+      <h1 class="mt-2 text-2xl font-extrabold text-brand-900">{{ booking.title }}</h1>
+      <p class="mt-1 text-sm text-slate-500">Created {{ booking.created_at.strftime("%d %b %Y") }}</p>
+    </div>
+    <span class="rounded-full px-3 py-1.5 text-sm font-semibold
+      {{ 'bg-emerald-50 text-emerald-700' if booking.status == 'completed'
+         else 'bg-red-50 text-red-700' if booking.status in ('cancelled', 'rejected')
+         else 'bg-brand-50 text-brand-700' if booking.status in ('accepted', 'in_progress')
+         else 'bg-amber-50 text-amber-700' }}">
+      {{ booking.status_label }}
+    </span>
+  </div>
+
+  <div class="mt-8 grid gap-4 border-t border-slate-100 pt-8 sm:grid-cols-3">
+    <div>
+      <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Location</p>
+      <p class="mt-1 text-sm font-semibold text-brand-900">{{ booking.location or "Not specified" }}</p>
+    </div>
+    <div>
+      <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Budget</p>
+      <p class="mt-1 text-sm font-semibold text-brand-900">
+        {{ "₦{:,}".format(booking.budget_naira) if booking.budget_naira else "Not specified" }}
+      </p>
+    </div>
+    <div>
+      <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Preferred Date</p>
+      <p class="mt-1 text-sm font-semibold text-brand-900">
+        {{ booking.preferred_date.strftime("%d %b %Y") if booking.preferred_date else "Flexible" }}
+      </p>
+    </div>
+  </div>
+
+  <div class="mt-8 border-t border-slate-100 pt-8">
+    <h2 class="text-sm font-semibold uppercase tracking-wide text-slate-400">Details</h2>
+    <p class="mt-3 whitespace-pre-line leading-relaxed text-slate-600">{{ booking.description }}</p>
+  </div>
+
+  {% if booking.review %}
+  <div class="mt-8 border-t border-slate-100 pt-8">
+    <h2 class="text-sm font-semibold uppercase tracking-wide text-slate-400">Review</h2>
+    <p class="mt-2 text-sm font-semibold text-brand-900">{{ booking.review.rating }}/5</p>
+    {% if booking.review.comment %}
+    <p class="mt-1 text-sm text-slate-600">{{ booking.review.comment }}</p>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {% if booking.status not in ("completed", "cancelled", "rejected") %}
+  <div class="mt-8 border-t border-slate-100 pt-8">
+    <form method="POST" action="{{ url_for('admin.cancel_booking', booking_id=booking.id) }}">
+      {{ action_form.hidden_tag() }}
+      <button type="submit" class="text-sm font-semibold text-red-600 hover:underline">Cancel this booking (admin override)</button>
+    </form>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
