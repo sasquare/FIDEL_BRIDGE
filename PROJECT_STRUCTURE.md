@@ -24,7 +24,8 @@ FIDEL_BRIDGE/
 │   │   ├── professional.py    # Profile/skill/portfolio/verification-upload forms
 │   │   ├── corporate.py       # Company profile + service-request forms
 │   │   ├── booking.py         # Booking request form
-│   │   └── message.py         # Chat message form
+│   │   ├── message.py         # Chat message form
+│   │   └── review.py          # Star rating + comment form
 │   ├── models/
 │   │   ├── __init__.py        # Imports every model so Flask-Migrate sees them
 │   │   ├── roles.py           # Role constants (customer/professional/corporate/admin)
@@ -40,7 +41,8 @@ FIDEL_BRIDGE/
 │   │   ├── booking.py         # Booking (customer <-> professional job request + status lifecycle)
 │   │   ├── notification.py    # Notification (per-user, optionally linked to a booking)
 │   │   ├── conversation.py    # Conversation (two users, one per accepted booking)
-│   │   └── message.py         # Message (belongs to a Conversation)
+│   │   ├── message.py         # Message (belongs to a Conversation)
+│   │   └── review.py          # Review (1:1 with a completed Booking; rating + comment)
 │   ├── utils/
 │   │   ├── decorators.py      # role_required(*roles) route decorator
 │   │   ├── auth_helpers.py    # dashboard_url_for(user) role -> dashboard redirect
@@ -54,7 +56,8 @@ FIDEL_BRIDGE/
 │   │   │   ├── footer.html
 │   │   │   └── flash_messages.html
 │   │   ├── macros/
-│   │   │   └── forms.html     # Reusable styled field/checkbox/error-banner macros
+│   │   │   ├── forms.html     # Reusable styled field/checkbox/error-banner macros
+│   │   │   └── stars.html     # render_stars(rating) - used everywhere a rating is shown
 │   │   ├── dashboard/
 │   │   │   └── _shell.html    # Shared responsive dashboard shell (sidebar -> mobile tabs)
 │   │   ├── errors/
@@ -78,7 +81,7 @@ FIDEL_BRIDGE/
 │   │   │   ├── profile.html
 │   │   │   ├── book_professional.html  # Booking request form, reached from a profile page
 │   │   │   ├── bookings.html           # List with status-filter tabs
-│   │   │   └── booking_detail.html     # Detail + cancel (while pending/accepted)
+│   │   │   └── booking_detail.html     # Detail + cancel (while pending/accepted) + leave a review (once completed)
 │   │   ├── professional/
 │   │   │   ├── dashboard.html     # Profile-completion checklist + stats
 │   │   │   ├── profile.html
@@ -198,6 +201,16 @@ FIDEL_BRIDGE/
   volume and avoids adding Flask-SocketIO/eventlet (and the deployment
   complexity that brings on Render) for a feature that doesn't need
   sub-second latency yet.
+- **One review per booking, not per professional.** `Review.booking_id` is
+  unique, so a review is tied to a specific completed job rather than a
+  free-standing rating — this is what stops the same customer from
+  rating the same professional multiple times for one job, and keeps
+  every review traceable to real, completed work.
+- **Rating filter/sort uses a SQL subquery joined into the search query**,
+  not Python-side sorting after fetching a page — `AVG`/`COUNT` grouped by
+  `professional_profile_id`, outer-joined so professionals with zero
+  reviews still appear. This keeps pagination correct (each page reflects
+  the true sort order across *all* results, not just the page fetched).
 - **SQLite now, PostgreSQL later**: `DATABASE_URL` is read from the
   environment, so switching to PostgreSQL in production is a config change,
   not a code change.

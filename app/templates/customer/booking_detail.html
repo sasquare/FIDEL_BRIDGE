@@ -1,4 +1,6 @@
 {% extends "dashboard/_shell.html" %}
+{% from "macros/forms.html" import render_field %}
+{% from "macros/stars.html" import render_stars %}
 {% block title %}{{ booking.title }} — FidelBridge{% endblock %}
 
 {% block dashboard_content %}
@@ -60,6 +62,29 @@
       {{ cancel_form.hidden_tag() }}
       <button type="submit" class="text-sm font-semibold text-red-600 hover:underline">Cancel this request</button>
     </form>
+  </div>
+  {% endif %}
+
+  {% if booking.status == "completed" %}
+  <div class="mt-8 border-t border-slate-100 pt-8">
+    <h2 class="text-sm font-semibold uppercase tracking-wide text-slate-400">Your Review</h2>
+    {% if booking.review %}
+    <div class="mt-3 flex items-center gap-2">
+      {{ render_stars(booking.review.rating) }}
+      <span class="text-sm font-semibold text-brand-900">{{ booking.review.rating }}/5</span>
+    </div>
+    {% if booking.review.comment %}
+    <p class="mt-2 text-sm text-slate-600">{{ booking.review.comment }}</p>
+    {% endif %}
+    {% else %}
+    <p class="mt-1 text-sm text-slate-500">How was {{ booking.professional.user.full_name.split(' ')[0] }}'s work?</p>
+    <form method="POST" action="{{ url_for('customer.leave_review', booking_id=booking.id) }}" class="mt-4 flex flex-col gap-4 sm:max-w-sm">
+      {{ review_form.hidden_tag() }}
+      {{ render_field(review_form.rating) }}
+      {{ render_field(review_form.comment) }}
+      {{ review_form.submit(class_="btn-primary w-full sm:w-auto") }}
+    </form>
+    {% endif %}
   </div>
   {% endif %}
 </div>

@@ -23,8 +23,10 @@ This repository is being built in phases.
   procurement / facility management / janitorial service requests.
 - **Phase 6:** booking system — hire a professional, accept/reject/complete
   jobs, and in-app notifications.
-- **Phase 7 (this phase):** messaging — conversation list, chat interface,
-  unread messages, and basic real-time updates (polling).
+- **Phase 7:** messaging — conversation list, chat interface, unread
+  messages, and basic real-time updates (polling).
+- **Phase 8 (this phase):** ratings & reviews, plus location/category
+  filters and sorting on search.
 
 ## Tech Stack
 

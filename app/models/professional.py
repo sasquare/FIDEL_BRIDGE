@@ -47,10 +47,23 @@ class ProfessionalProfile(db.Model):
     bookings = db.relationship(
         "Booking", back_populates="professional", cascade="all, delete-orphan", order_by="Booking.created_at.desc()"
     )
+    reviews = db.relationship(
+        "Review", back_populates="professional", cascade="all, delete-orphan", order_by="Review.created_at.desc()"
+    )
 
     @property
     def available_days_list(self):
         return self.available_days.split(",") if self.available_days else []
+
+    @property
+    def review_count(self):
+        return len(self.reviews)
+
+    @property
+    def average_rating(self):
+        if not self.reviews:
+            return None
+        return sum(review.rating for review in self.reviews) / len(self.reviews)
 
     def __repr__(self):
         return f"<ProfessionalProfile user_id={self.user_id} profession={self.profession!r}>"

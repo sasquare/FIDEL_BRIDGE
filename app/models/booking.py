@@ -57,6 +57,7 @@ class Booking(db.Model):
 
     customer = db.relationship("CustomerProfile", back_populates="bookings")
     professional = db.relationship("ProfessionalProfile", back_populates="bookings")
+    review = db.relationship("Review", back_populates="booking", uselist=False, cascade="all, delete-orphan")
 
     @property
     def status_label(self):

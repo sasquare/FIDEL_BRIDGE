@@ -153,6 +153,18 @@ Visit **http://127.0.0.1:5000** — you should see the FidelBridge landing page.
   within ~4 seconds the new message should appear without a page reload.
 - Confirm a third account (not a participant in that booking) gets a 404
   when visiting the conversation URL directly.
+- Complete a booking end-to-end (accept → in progress → completed), then
+  as the customer, leave a review from the booking detail page. Confirm
+  the form disappears and the stars + comment show in its place, and that
+  the professional gets a review notification.
+- Visit that professional's public profile and confirm the "Rating"
+  summary and the reviews list both show the new review.
+- Try submitting a second review for the same booking (e.g. by resending
+  the form) — it should 400, not create a duplicate.
+- On `/browse/professionals`, try the **State** filter, the **Minimum
+  Rating** filter, and each **Sort By** option (especially "Highest
+  Rated") with a few reviewed professionals in the database, and confirm
+  the results and their order change as expected.
 
 ## Running tests
 
@@ -160,10 +172,11 @@ Visit **http://127.0.0.1:5000** — you should see the FidelBridge landing page.
 pytest
 ```
 
-All tests should pass (60 as of Phase 7, across `tests/test_landing_page.py`,
+All tests should pass (68 as of Phase 8, across `tests/test_landing_page.py`,
 `tests/test_auth.py`, `tests/test_browse.py`, `tests/test_customer.py`,
 `tests/test_professional.py`, `tests/test_corporate.py`,
-`tests/test_booking.py`, and `tests/test_messaging.py`).
+`tests/test_booking.py`, `tests/test_messaging.py`, and
+`tests/test_reviews.py`).
 
 ## Common Errors & Troubleshooting
 

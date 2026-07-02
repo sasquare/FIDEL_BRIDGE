@@ -33,7 +33,12 @@
   </a>
   <div class="card !p-6">
     <p class="text-sm font-semibold text-slate-500">Average Rating</p>
-    <p class="mt-2 text-3xl font-extrabold text-brand-900">&mdash;</p>
+    <p class="mt-2 text-3xl font-extrabold text-brand-900">
+      {{ "%.1f"|format(professional.average_rating) if professional.average_rating else "—" }}
+    </p>
+    {% if professional.review_count %}
+    <p class="text-xs text-slate-400">{{ professional.review_count }} review{{ "s" if professional.review_count != 1 else "" }}</p>
+    {% endif %}
   </div>
 </div>
 

@@ -222,3 +222,34 @@ first try:**
    assertions failed confusingly far from the real cause. Fixed by adding
    the missing `logout` calls; worth noting as a pattern for future test
    helpers in this codebase.
+
+## Phase 8 — Ratings & Reviews, Search Filters & Sorting
+
+- Added a `Review` model: one per completed `Booking` (unique on
+  `booking_id`, so a job can only be rated once), 1–5 star rating plus an
+  optional comment. `ProfessionalProfile` gets `average_rating` and
+  `review_count` computed properties.
+- Customers can leave a review from the booking detail page once (and only
+  once) a booking reaches "Completed" — the form is replaced by the
+  submitted review (stars + comment) after submission. Leaving a review
+  notifies the professional.
+- The public professional profile now shows the real average rating and
+  star count instead of "No reviews yet", plus a full reviews list
+  (reviewer name, stars, comment, date). Search result cards show the
+  same star summary.
+- Added a reusable `render_stars(rating)` Jinja macro
+  (`app/templates/macros/stars.html`) so rating stars render identically
+  everywhere they appear (search cards, profile page, booking review,
+  dashboard).
+- Extended professional search with a **State** filter (alongside the
+  existing City filter — "Location Filters"), a **Minimum Rating** filter
+  (4+ / 3+ stars), and a **Sort By** control (Most Relevant / Highest
+  Rated / Most Reviews / Newest), all combinable and preserved across
+  pagination. Rating-based filtering/sorting uses a SQL subquery
+  (`AVG`/`COUNT` grouped by professional) joined into the search query, so
+  it works correctly with the existing pagination rather than sorting only
+  the current page in Python.
+- Extended the Pytest suite to cover leaving a review (and being blocked
+  before completion or on a second attempt), the review showing up on the
+  public profile with the correct average, the review notification, and
+  the new minimum-rating/sort-by/state search behavior (68 tests total).

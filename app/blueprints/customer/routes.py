@@ -6,6 +6,7 @@ from app.blueprints.customer import customer_bp
 from app.extensions import db
 from app.forms.booking import BookingForm
 from app.forms.customer import CustomerProfileForm
+from app.forms.review import ReviewForm
 from app.models import roles
 from app.models.booking import (
     CANCELLABLE_STATUSES,
@@ -17,6 +18,7 @@ from app.models.booking import (
     Booking,
 )
 from app.models.category import Category
+from app.models.review import Review
 from app.models.user import User
 from app.utils.decorators import role_required
 from app.utils.messaging import unread_message_count
@@ -140,11 +142,13 @@ def booking_detail(booking_id):
         id=booking_id, customer_profile_id=current_user.customer_profile.id
     ).first_or_404()
     cancel_form = FlaskForm()
+    review_form = ReviewForm()
 
     return render_template(
         "customer/booking_detail.html",
         booking=booking,
         cancel_form=cancel_form,
+        review_form=review_form,
         active="bookings",
         sidebar_items=_sidebar_items(),
     )
@@ -168,4 +172,38 @@ def cancel_booking(booking_id):
     )
     db.session.commit()
     flash("Booking cancelled.", "success")
+    return redirect(url_for("customer.booking_detail", booking_id=booking.id))
+
+
+@customer_bp.route("/bookings/<int:booking_id>/review", methods=["POST"])
+@role_required(roles.CUSTOMER)
+def leave_review(booking_id):
+    booking = Booking.query.filter_by(
+        id=booking_id, customer_profile_id=current_user.customer_profile.id
+    ).first_or_404()
+
+    if booking.status != STATUS_COMPLETED or booking.review is not None:
+        abort(400)
+
+    form = ReviewForm()
+    if form.validate_on_submit():
+        db.session.add(
+            Review(
+                booking_id=booking.id,
+                customer_profile_id=booking.customer_profile_id,
+                professional_profile_id=booking.professional_profile_id,
+                rating=int(form.rating.data),
+                comment=form.comment.data.strip() if form.comment.data else None,
+            )
+        )
+        notify(
+            booking.professional.user,
+            f"You received a {form.rating.data}-star review from {current_user.full_name}.",
+            link=url_for("browse.professional_profile", user_id=booking.professional.user_id),
+        )
+        db.session.commit()
+        flash("Thanks for your review!", "success")
+    else:
+        flash("Please choose a rating before submitting.", "error")
+
     return redirect(url_for("customer.booking_detail", booking_id=booking.id))

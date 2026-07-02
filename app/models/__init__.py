@@ -14,6 +14,7 @@ from app.models.message import Message  # noqa: F401
 from app.models.notification import Notification  # noqa: F401
 from app.models.portfolio import PortfolioItem  # noqa: F401
 from app.models.professional import ProfessionalProfile  # noqa: F401
+from app.models.review import Review  # noqa: F401
 from app.models.skill import Skill  # noqa: F401
 from app.models.user import User  # noqa: F401
 from app.models.verification import Verification  # noqa: F401

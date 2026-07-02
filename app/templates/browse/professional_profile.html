@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "macros/stars.html" import render_stars %}
 {% block title %}{{ professional.user.full_name }} — {{ professional.profession }} — FidelBridge{% endblock %}
 
 {% block content %}
@@ -52,7 +53,14 @@
       </div>
       <div>
         <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Rating</p>
+        {% if professional.average_rating %}
+        <div class="mt-1 flex items-center gap-2">
+          {{ render_stars(professional.average_rating) }}
+          <span class="text-sm font-semibold text-brand-900">{{ "%.1f"|format(professional.average_rating) }} ({{ professional.review_count }})</span>
+        </div>
+        {% else %}
         <p class="mt-1 text-sm font-semibold text-brand-900">No reviews yet</p>
+        {% endif %}
       </div>
     </div>
 
@@ -105,6 +113,30 @@
             <p class="mt-1 line-clamp-2 text-xs text-slate-500">{{ item.description }}</p>
             {% endif %}
           </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    {% if professional.reviews %}
+    <div class="mt-8 border-t border-slate-100 pt-8">
+      <h2 class="text-sm font-semibold uppercase tracking-wide text-slate-400">
+        Reviews ({{ professional.review_count }})
+      </h2>
+      <div class="mt-4 flex flex-col gap-5">
+        {% for review in professional.reviews %}
+        <div class="border-b border-slate-50 pb-5 last:border-0 last:pb-0">
+          <div class="flex items-center justify-between gap-3">
+            <div class="flex items-center gap-2">
+              {{ render_stars(review.rating) }}
+              <span class="text-sm font-semibold text-brand-900">{{ review.customer.user.full_name }}</span>
+            </div>
+            <span class="text-xs text-slate-400">{{ review.created_at.strftime("%d %b %Y") }}</span>
+          </div>
+          {% if review.comment %}
+          <p class="mt-2 text-sm text-slate-600">{{ review.comment }}</p>
+          {% endif %}
         </div>
         {% endfor %}
       </div>
