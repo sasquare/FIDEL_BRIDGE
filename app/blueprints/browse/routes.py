@@ -85,6 +85,26 @@ def _build_active_filters(filters, active_category):
     return chips
 
 
+def _build_recovery_suggestions(active_category):
+    """Categories that currently have at least one active professional,
+    for the empty-results recovery UI - excludes the active category
+    (if any) since re-suggesting the exact search that just came up empty
+    isn't a recovery path. Ordered by professional count, so the
+    suggestions point toward categories most likely to actually help.
+    """
+    query = (
+        db.session.query(Category, func.count(ProfessionalProfile.id).label("count"))
+        .join(ProfessionalProfile, ProfessionalProfile.category_id == Category.id)
+        .join(User, ProfessionalProfile.user_id == User.id)
+        .filter(User.role == roles.PROFESSIONAL, User.is_active_account.is_(True))
+    )
+    if active_category:
+        query = query.filter(Category.id != active_category.id)
+
+    rows = query.group_by(Category.id).order_by(func.count(ProfessionalProfile.id).desc()).limit(5).all()
+    return [category for category, _count in rows]
+
+
 @browse_bp.route("/categories")
 def categories():
     all_categories = Category.query.order_by(Category.name).all()
@@ -171,6 +191,15 @@ def professionals():
         "min_rating": min_rating,
         "sort": sort_by,
     }
+    active_filters = _build_active_filters(filters, active_category)
+
+    # Recovery suggestions only matter when the search actually came up
+    # empty and some filter narrowed it there - no point suggesting
+    # "browse another category" when the whole platform has no
+    # professionals yet, or when the customer already sees results.
+    recovery_categories = []
+    if pagination.total == 0 and active_filters:
+        recovery_categories = _build_recovery_suggestions(active_category)
 
     return render_template(
         "browse/professionals.html",
@@ -181,7 +210,8 @@ def professionals():
         sort_options=SORT_OPTIONS,
         min_rating_options=MIN_RATING_OPTIONS,
         filters=filters,
-        active_filters=_build_active_filters(filters, active_category),
+        active_filters=active_filters,
+        recovery_categories=recovery_categories,
     )
 
 

@@ -222,3 +222,53 @@ def test_professional_profile_404_for_non_professional(client, app):
 
     response = client.get(f"/browse/professionals/{customer_id}")
     assert response.status_code == 404
+
+
+def test_empty_state_with_no_professionals_at_all_has_no_recovery_ui(client):
+    response = client.get("/browse/professionals")
+    html = response.data.decode()
+    assert "No professionals listed yet" in html
+    assert "Clear all filters" not in html
+
+
+def test_empty_state_with_active_filters_offers_recovery(client, app, category):
+    # Professional exists but has no reviews, so a minimum-rating filter
+    # legitimately returns zero results.
+    _make_professional(app, category, full_name="Chidi Okafor", email="chidi@example.com")
+
+    response = client.get("/browse/professionals?min_rating=4")
+    html = response.data.decode()
+    assert "No professionals match your search" in html
+    assert "Clear all filters" in html
+    # The professional's category has an active professional (just none
+    # meeting the rating bar), so it should be suggested as a recovery path.
+    with app.app_context():
+        cat = db.session.get(Category, category)
+        assert cat.name in html
+
+
+def test_empty_state_recovery_excludes_the_active_category(client, app, category):
+    with app.app_context():
+        other_category = Category(name="Painters", slug="painters", icon_path="M0 0")
+        db.session.add(other_category)
+        db.session.commit()
+        other_id = other_category.id
+        other_name = other_category.name
+
+    # "category" (Electricians) has a professional with no reviews; "Painters"
+    # has a professional too, so it's a valid recovery suggestion.
+    _make_professional(app, category, full_name="Chidi Okafor", email="chidi@example.com")
+    _make_professional(app, other_id, full_name="Uche Bello", email="uche@example.com")
+
+    with app.app_context():
+        cat = db.session.get(Category, category)
+        slug = cat.slug
+
+    response = client.get(f"/browse/professionals?category={slug}&min_rating=4")
+    html = response.data.decode()
+    assert "No professionals match your search" in html
+    assert other_name in html
+    # A recovery suggestion for a category links directly to it with no
+    # other params - that exact link shouldn't exist for the category the
+    # customer already searched (and got zero results from).
+    assert f'href="/browse/professionals?category={slug}"' not in html
