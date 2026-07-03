@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% from "macros/stars.html" import render_stars %}
+{% from "macros/professional.html" import avatar %}
 {% block title %}
   {%- if active_category -%}
     {{ active_category.name }} Professionals — FidelBridge
@@ -79,9 +80,7 @@
     {% for professional in professionals %}
     <a href="{{ url_for('browse.professional_profile', user_id=professional.user_id) }}" class="card flex flex-col !p-6">
       <div class="flex items-center gap-3">
-        <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-brand-100 text-lg font-bold text-brand-700">
-          {{ professional.user.full_name[0]|upper }}
-        </span>
+        {{ avatar(professional) }}
         <div class="min-w-0">
           <p class="truncate font-semibold text-brand-900">{{ professional.user.full_name }}</p>
           <p class="truncate text-sm text-slate-500">{{ professional.profession }}</p>

@@ -149,6 +149,31 @@ def unverify_professional(professional_id):
     return redirect(url_for("admin.professional_detail", professional_id=professional.id))
 
 
+@admin_bp.route("/professionals/<int:professional_id>/verify-business", methods=["POST"])
+@role_required(roles.ADMIN)
+def verify_business(professional_id):
+    professional = db.get_or_404(ProfessionalProfile, professional_id)
+    professional.is_business_verified = True
+    notify(
+        professional.user,
+        "Your business registration has been verified. Your profile now shows a Registered Business badge.",
+        link=url_for("browse.professional_profile", user_id=professional.user_id),
+    )
+    db.session.commit()
+    flash(f"Business registration verified for {professional.user.full_name}.", "success")
+    return redirect(url_for("admin.professional_detail", professional_id=professional.id))
+
+
+@admin_bp.route("/professionals/<int:professional_id>/unverify-business", methods=["POST"])
+@role_required(roles.ADMIN)
+def unverify_business(professional_id):
+    professional = db.get_or_404(ProfessionalProfile, professional_id)
+    professional.is_business_verified = False
+    db.session.commit()
+    flash(f"Business verification revoked for {professional.user.full_name}.", "success")
+    return redirect(url_for("admin.professional_detail", professional_id=professional.id))
+
+
 @admin_bp.route("/verifications/<int:verification_id>/approve", methods=["POST"])
 @role_required(roles.ADMIN)
 def approve_verification(verification_id):

@@ -90,5 +90,65 @@
     <p class="mt-3 text-sm italic text-slate-400">No documents uploaded yet.</p>
     {% endif %}
   </div>
+
+  {% if professional.professional_type == "registered_business" %}
+  <div class="mt-8 border-t border-slate-100 pt-8">
+    <div class="flex flex-wrap items-center justify-between gap-4">
+      <div>
+        <h2 class="text-sm font-semibold uppercase tracking-wide text-slate-400">Business Registration</h2>
+        <p class="mt-2 text-sm font-semibold text-brand-900">{{ professional.business_name or "Not provided" }}</p>
+        <p class="text-xs text-slate-500">CAC No. {{ professional.business_registration_number or "Not provided" }}</p>
+      </div>
+      <div class="flex items-center gap-3">
+        <span class="rounded-full px-3 py-1.5 text-sm font-semibold {{ 'bg-emerald-50 text-emerald-700' if professional.is_business_verified else 'bg-amber-50 text-amber-700' }}">
+          {{ "Verified" if professional.is_business_verified else "Pending" }}
+        </span>
+        {% if professional.is_business_verified %}
+        <form method="POST" action="{{ url_for('admin.unverify_business', professional_id=professional.id) }}">
+          {{ action_form.hidden_tag() }}
+          <button type="submit" class="btn-secondary !border-red-200 !text-red-600 hover:!border-red-300">Revoke</button>
+        </form>
+        {% else %}
+        <form method="POST" action="{{ url_for('admin.verify_business', professional_id=professional.id) }}">
+          {{ action_form.hidden_tag() }}
+          <button type="submit" class="btn-primary">Verify Business</button>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="mt-8 border-t border-slate-100 pt-8">
+    <div class="flex items-center gap-2">
+      <h2 class="text-sm font-semibold uppercase tracking-wide text-slate-400">Accountability</h2>
+      <span class="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-500">Private — Admin Only</span>
+    </div>
+    <div class="mt-4 grid gap-6 sm:grid-cols-2">
+      <div>
+        <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Guarantor</p>
+        {% if professional.guarantor_name or professional.guarantor_phone %}
+        <p class="mt-2 text-sm font-semibold text-brand-900">{{ professional.guarantor_name or "Not provided" }}</p>
+        <p class="text-xs text-slate-500">{{ professional.guarantor_relationship or "Relationship not provided" }}</p>
+        <p class="text-xs text-slate-500">{{ professional.guarantor_phone or "No phone provided" }}</p>
+        {% if professional.guarantor_address %}
+        <p class="mt-1 text-xs text-slate-500">{{ professional.guarantor_address }}</p>
+        {% endif %}
+        {% else %}
+        <p class="mt-2 text-sm italic text-slate-400">Not provided yet.</p>
+        {% endif %}
+      </div>
+      <div>
+        <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Emergency Contact</p>
+        {% if professional.emergency_contact_name or professional.emergency_contact_phone %}
+        <p class="mt-2 text-sm font-semibold text-brand-900">{{ professional.emergency_contact_name or "Not provided" }}</p>
+        <p class="text-xs text-slate-500">{{ professional.emergency_contact_relationship or "Relationship not provided" }}</p>
+        <p class="text-xs text-slate-500">{{ professional.emergency_contact_phone or "No phone provided" }}</p>
+        {% else %}
+        <p class="mt-2 text-sm italic text-slate-400">Not provided yet.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
 </div>
 {% endblock %}

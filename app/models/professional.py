@@ -150,6 +150,23 @@ class ProfessionalProfile(db.Model):
         return f"{round(avg_minutes / (24 * 60))}d"
 
     @property
+    def pricing_summary(self):
+        """Human-readable rate, e.g. "Starts from N15,000" - or None if no
+        pricing model has been set. Kept as a model property (like
+        average_response_time) so both the public profile and any future
+        surface that needs it share one formatting rule."""
+        if self.pricing_type == PRICING_TYPE_NOT_SPECIFIED or self.pricing_amount is None:
+            return None
+        amount = f"₦{self.pricing_amount:,}"
+        if self.pricing_type == PRICING_TYPE_STARTS_FROM:
+            return f"Starts from {amount}"
+        if self.pricing_type == PRICING_TYPE_HOURLY:
+            return f"{amount} / hour"
+        if self.pricing_type == PRICING_TYPE_DAILY:
+            return f"{amount} / day"
+        return None
+
+    @property
     def profile_completion_percentage(self):
         from app.utils.profile_completion import profile_completion_percentage
 
