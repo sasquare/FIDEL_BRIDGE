@@ -36,6 +36,23 @@ def test_professionals_page_lists_active_professionals(client, app, category):
     assert b"Chidi Okafor" in response.data
 
 
+def test_professionals_page_shows_result_count_when_all_fit_on_one_page(client, app, category):
+    _make_professional(app, category, full_name="Chidi Okafor", email="chidi@example.com")
+    _make_professional(app, category, full_name="Uche Bello", email="uche_count@example.com")
+
+    response = client.get("/browse/professionals")
+    assert b"Showing 2 professionals" in response.data
+
+
+def test_professionals_page_shows_partial_result_count_across_pages(client, app, category):
+    for i in range(14):
+        _make_professional(app, category, full_name=f"Pro Number {i}", email=f"pronum{i}@example.com")
+
+    response = client.get("/browse/professionals")
+    # PER_PAGE is 12, so page 1 of 14 total professionals shows 12.
+    assert b"Showing 12 of 14 professionals" in response.data
+
+
 def test_professionals_search_filters_by_category(client, app, category):
     _make_professional(app, category)
     with app.app_context():
