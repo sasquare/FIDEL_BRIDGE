@@ -58,6 +58,19 @@ def test_professionals_search_filters_by_keyword(client, app, category):
     assert b"Uche Bello" not in response.data
 
 
+def test_professionals_search_matches_category_name(client, app, category):
+    # The homepage search bar's autocomplete suggests category names (see
+    # the hero-categories datalist in main/index.html) - searching one of
+    # those suggestions must actually return professionals in that
+    # category, even when the category name itself appears nowhere in
+    # their name/profession/bio/skills (here: "Electricians" vs a
+    # professional whose profession is "Plumber").
+    _make_professional(app, category, full_name="Chidi Okafor", email="chidi@example.com")
+
+    response = client.get("/browse/professionals?q=Electricians")
+    assert b"Chidi Okafor" in response.data
+
+
 def test_professional_profile_page_renders(client, app, category):
     user_id = _make_professional(app, category, verified=True)
     response = client.get(f"/browse/professionals/{user_id}")

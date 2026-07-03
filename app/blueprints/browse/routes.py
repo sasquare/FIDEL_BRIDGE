@@ -74,6 +74,12 @@ def professionals():
                 ProfessionalProfile.profession.ilike(like),
                 ProfessionalProfile.bio.ilike(like),
                 ProfessionalProfile.id.in_(select(Skill.professional_profile_id).where(Skill.name.ilike(like))),
+                # The homepage search bar's autocomplete suggests category
+                # names (see hero-categories datalist in main/index.html) -
+                # without this, picking a suggestion like "Plumbing" would
+                # return zero results unless some professional's own
+                # profession/bio/skill text happened to contain that word.
+                ProfessionalProfile.category_id.in_(select(Category.id).where(Category.name.ilike(like))),
             )
         )
 
