@@ -6,9 +6,15 @@ from flask_wtf import FlaskForm
 
 from app.blueprints.professional import professional_bp
 from app.extensions import db
-from app.forms.professional import PortfolioItemForm, ProfessionalProfileForm, SkillForm, VerificationUploadForm
+from app.forms.professional import (
+    PortfolioItemForm,
+    PricingForm,
+    ProfessionalProfileForm,
+    SkillForm,
+    VerificationUploadForm,
+)
 from app.models import roles
-from app.models.professional import PROFESSIONAL_TYPE_REGISTERED_BUSINESS
+from app.models.professional import PRICING_TYPE_NOT_SPECIFIED, PROFESSIONAL_TYPE_REGISTERED_BUSINESS
 from app.models.booking import (
     STATUS_ACCEPTED,
     STATUS_COMPLETED,
@@ -31,6 +37,7 @@ def _sidebar_items():
     return [
         {"key": "dashboard", "label": "Dashboard", "url": url_for("professional.dashboard")},
         {"key": "profile", "label": "My Profile", "url": url_for("professional.profile")},
+        {"key": "pricing", "label": "Pricing", "url": url_for("professional.pricing")},
         {"key": "bookings", "label": "Job Requests", "url": url_for("professional.bookings")},
         {"key": "messages", "label": "Messages", "url": url_for("messages.conversations")},
         {"key": "skills", "label": "Skills", "url": url_for("professional.skills")},
@@ -146,6 +153,42 @@ def profile():
         professional=professional,
         active="profile",
         sidebar_items=_sidebar_items(),
+    )
+
+
+@professional_bp.route("/pricing", methods=["GET", "POST"])
+@role_required(roles.PROFESSIONAL)
+def pricing():
+    professional = _current_professional()
+    form = PricingForm(
+        pricing_type=professional.pricing_type,
+        pricing_amount=professional.pricing_amount,
+        requires_inspection=professional.requires_inspection,
+        consultation_fee=professional.consultation_fee,
+    )
+
+    if form.validate_on_submit():
+        is_priced = form.pricing_type.data != PRICING_TYPE_NOT_SPECIFIED
+        if is_priced and form.pricing_amount.data is None:
+            form.pricing_amount.errors.append("Please enter an amount for this pricing model.")
+            return render_template(
+                "professional/pricing.html", form=form, active="pricing", sidebar_items=_sidebar_items()
+            )
+
+        professional.pricing_type = form.pricing_type.data
+        # An amount only makes sense alongside a chosen pricing model - clear
+        # it if the professional switches back to "Not specified" so a stale
+        # figure can't linger and be shown alongside "Not specified".
+        professional.pricing_amount = form.pricing_amount.data if is_priced else None
+        professional.requires_inspection = form.requires_inspection.data
+        professional.consultation_fee = form.consultation_fee.data
+
+        db.session.commit()
+        flash("Your pricing information has been updated.", "success")
+        return redirect(url_for("professional.pricing"))
+
+    return render_template(
+        "professional/pricing.html", form=form, active="pricing", sidebar_items=_sidebar_items()
     )
 
 

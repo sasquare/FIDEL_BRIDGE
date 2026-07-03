@@ -1,14 +1,30 @@
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileAllowed, FileField, FileSize
-from wtforms import IntegerField, SelectField, SelectMultipleField, StringField, SubmitField, TextAreaField, widgets
+from wtforms import (
+    BooleanField,
+    IntegerField,
+    SelectField,
+    SelectMultipleField,
+    StringField,
+    SubmitField,
+    TextAreaField,
+    widgets,
+)
 from wtforms.validators import DataRequired, Length, NumberRange, Optional
 
-from app.models.professional import PROFESSIONAL_TYPE_INDIVIDUAL, PROFESSIONAL_TYPE_REGISTERED_BUSINESS
+from app.models.professional import (
+    PRICING_TYPE_LABELS,
+    PRICING_TYPES,
+    PROFESSIONAL_TYPE_INDIVIDUAL,
+    PROFESSIONAL_TYPE_REGISTERED_BUSINESS,
+)
 
 PROFESSIONAL_TYPE_CHOICES = [
     (PROFESSIONAL_TYPE_INDIVIDUAL, "Individual Professional"),
     (PROFESSIONAL_TYPE_REGISTERED_BUSINESS, "Registered Business"),
 ]
+
+PRICING_TYPE_CHOICES = [(value, PRICING_TYPE_LABELS[value]) for value in PRICING_TYPES]
 
 WEEKDAY_CHOICES = [
     ("Mon", "Monday"),
@@ -63,6 +79,22 @@ class ProfessionalProfileForm(FlaskForm):
         "CAC Registration Number", validators=[Optional(), Length(max=50)]
     )
     submit = SubmitField("Save Changes")
+
+
+class PricingForm(FlaskForm):
+    pricing_type = SelectField("Pricing Model", choices=PRICING_TYPE_CHOICES, validators=[DataRequired()])
+    # Required only when pricing_type isn't "not_specified" - enforced in the
+    # route, same pattern as ProfessionalProfileForm's business fields.
+    pricing_amount = IntegerField(
+        "Amount (₦)", validators=[Optional(), NumberRange(min=0, message="Amount can't be negative.")]
+    )
+    requires_inspection = BooleanField("Requires an on-site inspection before final pricing")
+    consultation_fee = IntegerField(
+        "Consultation Fee (₦)",
+        validators=[Optional(), NumberRange(min=0, message="Fee can't be negative.")],
+        render_kw={"placeholder": "Leave blank if you don't charge for consultations"},
+    )
+    submit = SubmitField("Save Pricing")
 
 
 class SkillForm(FlaskForm):

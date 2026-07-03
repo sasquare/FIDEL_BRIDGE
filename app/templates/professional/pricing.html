@@ -1,0 +1,38 @@
+{% extends "dashboard/_shell.html" %}
+{% from "macros/forms.html" import render_field, render_form_errors, render_checkbox %}
+{% block title %}Pricing — FidelBridge{% endblock %}
+
+{% block dashboard_content %}
+<span class="eyebrow">Profile</span>
+<h1 class="mt-3 text-3xl font-extrabold text-brand-900">Pricing</h1>
+<p class="mt-3 max-w-xl text-slate-600">
+  Giving customers a starting price reduces back-and-forth and helps you win jobs faster.
+  This never locks you into a final price — it's just a starting point for the conversation.
+</p>
+
+<div class="card mt-8 max-w-xl !p-8" x-data="{ pricingType: '{{ form.pricing_type.data }}' }">
+  <form method="POST" novalidate class="flex flex-col gap-5">
+    {{ form.hidden_tag() }}
+    {{ render_form_errors(form) }}
+
+    <div class="flex flex-col gap-1.5">
+      <label for="{{ form.pricing_type.id }}" class="text-sm font-medium text-slate-700">{{ form.pricing_type.label.text }}</label>
+      {{ form.pricing_type(class_="w-full rounded-xl border px-4 py-2.5 text-sm text-slate-900 shadow-sm transition
+          focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-1
+          " ~ ("border-red-300" if form.pricing_type.errors else "border-slate-200"), **{"x-model": "pricingType"}) }}
+      {% for error in form.pricing_type.errors %}
+      <p class="text-xs font-medium text-red-600">{{ error }}</p>
+      {% endfor %}
+    </div>
+
+    <div x-show="pricingType !== 'not_specified'" x-cloak>
+      {{ render_field(form.pricing_amount) }}
+    </div>
+
+    {{ render_checkbox(form.requires_inspection) }}
+    {{ render_field(form.consultation_fee) }}
+
+    {{ form.submit(class_="btn-primary mt-2 w-full sm:w-auto") }}
+  </form>
+</div>
+{% endblock %}
