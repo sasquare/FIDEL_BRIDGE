@@ -3,6 +3,13 @@ from flask_wtf.file import FileAllowed, FileField, FileSize
 from wtforms import IntegerField, SelectField, SelectMultipleField, StringField, SubmitField, TextAreaField, widgets
 from wtforms.validators import DataRequired, Length, NumberRange, Optional
 
+from app.models.professional import PROFESSIONAL_TYPE_INDIVIDUAL, PROFESSIONAL_TYPE_REGISTERED_BUSINESS
+
+PROFESSIONAL_TYPE_CHOICES = [
+    (PROFESSIONAL_TYPE_INDIVIDUAL, "Individual Professional"),
+    (PROFESSIONAL_TYPE_REGISTERED_BUSINESS, "Registered Business"),
+]
+
 WEEKDAY_CHOICES = [
     ("Mon", "Monday"),
     ("Tue", "Tuesday"),
@@ -36,6 +43,24 @@ class ProfessionalProfileForm(FlaskForm):
     available_days = MultiCheckboxField("Available Days", choices=WEEKDAY_CHOICES, validators=[Optional()])
     available_hours = StringField(
         "Typical Hours", validators=[Optional(), Length(max=100)], render_kw={"placeholder": "e.g. 8:00 AM - 6:00 PM"}
+    )
+    profile_photo = FileField(
+        "Profile Photo",
+        validators=[
+            Optional(),
+            FileAllowed(["png", "jpg", "jpeg"], "Images only (PNG or JPG)."),
+            FileSize(max_size=5 * 1024 * 1024, message="Image must be smaller than 5 MB."),
+        ],
+    )
+    professional_type = SelectField(
+        "Business Type", choices=PROFESSIONAL_TYPE_CHOICES, validators=[DataRequired()]
+    )
+    # business_name/business_registration_number are only required when
+    # professional_type is "registered_business" - that depends on another
+    # field's value, so it's enforced in the route rather than here.
+    business_name = StringField("Business Name", validators=[Optional(), Length(max=150)])
+    business_registration_number = StringField(
+        "CAC Registration Number", validators=[Optional(), Length(max=50)]
     )
     submit = SubmitField("Save Changes")
 

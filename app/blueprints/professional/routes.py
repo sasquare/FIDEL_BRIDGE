@@ -8,6 +8,7 @@ from app.blueprints.professional import professional_bp
 from app.extensions import db
 from app.forms.professional import PortfolioItemForm, ProfessionalProfileForm, SkillForm, VerificationUploadForm
 from app.models import roles
+from app.models.professional import PROFESSIONAL_TYPE_REGISTERED_BUSINESS
 from app.models.booking import (
     STATUS_ACCEPTED,
     STATUS_COMPLETED,
@@ -23,7 +24,7 @@ from app.models.verification import Verification
 from app.utils.decorators import role_required
 from app.utils.messaging import unread_message_count
 from app.utils.notifications import notify
-from app.utils.uploads import save_portfolio_image, save_verification_document
+from app.utils.uploads import delete_profile_photo, save_portfolio_image, save_profile_photo, save_verification_document
 
 
 def _sidebar_items():
@@ -85,12 +86,31 @@ def profile():
         bio=professional.bio,
         available_days=professional.available_days_list,
         available_hours=professional.available_hours,
+        professional_type=professional.professional_type,
+        business_name=professional.business_name,
+        business_registration_number=professional.business_registration_number,
     )
     form.category_id.choices = [
         (category.id, category.name) for category in Category.query.order_by(Category.name).all()
     ]
 
     if form.validate_on_submit():
+        is_registered_business = form.professional_type.data == PROFESSIONAL_TYPE_REGISTERED_BUSINESS
+        business_name = form.business_name.data.strip() if form.business_name.data else None
+        business_registration_number = (
+            form.business_registration_number.data.strip() if form.business_registration_number.data else None
+        )
+        if is_registered_business and not (business_name and business_registration_number):
+            form.business_name.errors.append("Required for a registered business.")
+            form.business_registration_number.errors.append("Required for a registered business.")
+            return render_template(
+                "professional/profile.html",
+                form=form,
+                professional=professional,
+                active="profile",
+                sidebar_items=_sidebar_items(),
+            )
+
         professional.profession = form.profession.data.strip()
         professional.category_id = form.category_id.data
         professional.city = form.city.data.strip() if form.city.data else None
@@ -99,13 +119,33 @@ def profile():
         professional.bio = form.bio.data.strip() if form.bio.data else None
         professional.available_days = ",".join(form.available_days.data)
         professional.available_hours = form.available_hours.data.strip() if form.available_hours.data else None
+        professional.professional_type = form.professional_type.data
+        # An individual professional's business fields are cleared rather
+        # than left stale, so switching back from "registered_business"
+        # can't leave orphaned business info behind that no admin ever verified.
+        professional.business_name = business_name if is_registered_business else None
+        professional.business_registration_number = (
+            business_registration_number if is_registered_business else None
+        )
+        if not is_registered_business:
+            professional.is_business_verified = False
+
+        if form.profile_photo.data:
+            old_photo = professional.profile_photo_filename
+            professional.profile_photo_filename = save_profile_photo(form.profile_photo.data, current_user.id)
+            if old_photo:
+                delete_profile_photo(old_photo)
 
         db.session.commit()
         flash("Your profile has been updated.", "success")
         return redirect(url_for("professional.profile"))
 
     return render_template(
-        "professional/profile.html", form=form, active="profile", sidebar_items=_sidebar_items()
+        "professional/profile.html",
+        form=form,
+        professional=professional,
+        active="profile",
+        sidebar_items=_sidebar_items(),
     )
 
 

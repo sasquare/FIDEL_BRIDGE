@@ -41,3 +41,19 @@ def save_verification_document(file_storage, user_id):
         user_id,
         current_app.config["ALLOWED_DOCUMENT_EXTENSIONS"],
     )
+
+
+def save_profile_photo(file_storage, user_id):
+    return _save(
+        file_storage,
+        current_app.config["PROFILE_PHOTO_UPLOAD_FOLDER"],
+        user_id,
+        current_app.config["ALLOWED_IMAGE_EXTENSIONS"],
+    )
+
+
+def delete_profile_photo(relative_path):
+    """Best-effort delete of a previous profile photo when it's replaced.
+    Missing files are not an error - the DB row is the source of truth."""
+    path = Path(current_app.config["PROFILE_PHOTO_UPLOAD_FOLDER"]) / relative_path
+    path.unlink(missing_ok=True)

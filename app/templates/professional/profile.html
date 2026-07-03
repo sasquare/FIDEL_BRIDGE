@@ -11,9 +11,33 @@
 </p>
 
 <div class="card mt-8 max-w-2xl !p-8">
-  <form method="POST" novalidate class="flex flex-col gap-5">
+  <form method="POST" enctype="multipart/form-data" novalidate class="flex flex-col gap-5">
     {{ form.hidden_tag() }}
     {{ render_form_errors(form) }}
+
+    <div class="flex flex-col gap-1.5">
+      <label class="text-sm font-medium text-slate-700">Profile Photo</label>
+      <div class="flex items-center gap-4">
+        {% if professional.profile_photo_filename %}
+        <img
+          src="{{ url_for('static', filename='uploads/profile_photos/' ~ professional.profile_photo_filename) }}"
+          alt="Your profile photo"
+          class="h-16 w-16 shrink-0 rounded-full object-cover"
+        />
+        {% else %}
+        <span class="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-brand-100 text-xl font-bold text-brand-700">
+          {{ current_user.full_name[0]|upper }}
+        </span>
+        {% endif %}
+        <div class="flex-1">
+          {{ form.profile_photo(class_="w-full text-sm text-slate-600 file:mr-4 file:rounded-full file:border-0 file:bg-brand-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-brand-700 hover:file:bg-brand-100") }}
+          {% for error in form.profile_photo.errors %}
+          <p class="mt-1 text-xs font-medium text-red-600">{{ error }}</p>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
     {{ render_field(form.profession) }}
     {{ render_field(form.category_id) }}
     <div class="grid gap-5 sm:grid-cols-2">
@@ -36,6 +60,19 @@
     </div>
 
     {{ render_field(form.available_hours) }}
+
+    <div class="border-t border-slate-100 pt-5" x-data="{ professionalType: '{{ form.professional_type.data }}' }">
+      <label class="text-sm font-medium text-slate-700">Business Type</label>
+      <p class="mt-1 text-xs text-slate-500">
+        Registered businesses can display a "Registered Business" badge on their public profile once verified.
+      </p>
+      {{ form.professional_type(class_="mt-2 w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 shadow-sm transition focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-1", **{"x-model": "professionalType"}) }}
+      <div x-show="professionalType === 'registered_business'" x-cloak class="mt-4 grid gap-5 sm:grid-cols-2">
+        {{ render_field(form.business_name) }}
+        {{ render_field(form.business_registration_number) }}
+      </div>
+    </div>
+
     {{ form.submit(class_="btn-primary mt-2 w-full sm:w-auto") }}
   </form>
 </div>

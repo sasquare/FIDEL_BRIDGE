@@ -34,6 +34,9 @@ class Config:
 
     # Portfolio images are shown on public profiles, so they live under static/.
     PORTFOLIO_UPLOAD_FOLDER = BASE_DIR / "app" / "static" / "uploads" / "portfolio"
+    # Profile photos are also public-facing (profile page, search, Featured
+    # Professionals), so they follow the same static/ pattern as portfolio images.
+    PROFILE_PHOTO_UPLOAD_FOLDER = BASE_DIR / "app" / "static" / "uploads" / "profile_photos"
     # Verification documents are sensitive (IDs, certificates) and must never
     # be served directly by the static file server. They live under instance/
     # (gitignored, outside static/) and are only reachable via an
@@ -69,6 +72,7 @@ class TestingConfig(Config):
     _TEST_UPLOAD_ROOT = Path(tempfile.mkdtemp(prefix="fidelbridge-test-uploads-"))
     PORTFOLIO_UPLOAD_FOLDER = _TEST_UPLOAD_ROOT / "portfolio"
     VERIFICATION_UPLOAD_FOLDER = _TEST_UPLOAD_ROOT / "verifications"
+    PROFILE_PHOTO_UPLOAD_FOLDER = _TEST_UPLOAD_ROOT / "profile_photos"
 
 
 class ProductionConfig(Config):
