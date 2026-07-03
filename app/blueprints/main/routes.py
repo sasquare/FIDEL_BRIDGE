@@ -3,6 +3,7 @@ from sqlalchemy import func
 
 from app.blueprints.main import main_bp
 from app.extensions import db, limiter
+from app.models.booking import STATUS_COMPLETED, Booking
 from app.models.category import Category
 from app.models.professional import ProfessionalProfile
 from app.models.review import Review
@@ -38,7 +39,15 @@ def index():
         avg = average_ratings.get(category.id)
         category.average_rating = round(avg, 1) if avg is not None else None
 
-    return render_template("main/index.html", categories=categories)
+    average_rating = db.session.query(func.avg(Review.rating)).scalar()
+    stats = {
+        "verified_professionals": ProfessionalProfile.query.filter_by(is_verified=True).count(),
+        "completed_jobs": Booking.query.filter_by(status=STATUS_COMPLETED).count(),
+        "total_reviews": Review.query.count(),
+        "average_rating": f"{average_rating:.1f}" if average_rating is not None else "—",
+    }
+
+    return render_template("main/index.html", categories=categories, stats=stats)
 
 
 @main_bp.route("/healthz")

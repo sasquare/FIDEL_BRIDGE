@@ -180,59 +180,68 @@
     </p>
   </div>
 
-  {% set category_gradients = [
-    "from-brand-700 to-brand-500",
-    "from-amber-600 to-amber-400",
-    "from-brand-900 to-brand-600",
-    "from-amber-700 via-amber-600 to-brand-700",
-  ] %}
-  <div class="mt-14 grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-4">
+  {% set icon_tints = ["bg-brand-50 text-brand-700", "bg-amber-50 text-amber-600"] %}
+  <div class="mt-14 grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-4 lg:gap-7">
     {% for category in categories %}
     <a
       href="{{ url_for('browse.professionals', category=category.slug) }}"
-      class="card group flex flex-col overflow-hidden !p-0 text-left"
+      class="card group flex flex-col !p-6 text-left"
     >
-      <div class="relative h-28 w-full shrink-0 bg-gradient-to-br {{ category_gradients[loop.index0 % category_gradients|length] }}">
-        {% if category.image_url %}
-        <img src="{{ category.image_url }}" alt="" loading="lazy" decoding="async" class="absolute inset-0 h-full w-full object-cover" />
-        {% elif category.icon_path %}
-        <svg class="absolute inset-0 m-auto h-9 w-9 text-white/90" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+      <span class="flex h-12 w-12 items-center justify-center rounded-2xl transition-colors duration-300 group-hover:bg-brand-700 group-hover:text-white {{ icon_tints[loop.index0 % icon_tints|length] }}">
+        {% if category.icon_path %}
+        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6">
           <path stroke-linecap="round" stroke-linejoin="round" d="{{ category.icon_path }}" />
         </svg>
         {% endif %}
-        <div class="absolute inset-0 bg-gradient-to-t from-black/25 to-transparent"></div>
-      </div>
+      </span>
 
-      <div class="flex flex-1 flex-col p-5">
-        <p class="text-sm font-semibold text-brand-900 transition group-hover:text-brand-700">{{ category.name }}</p>
+      <p class="mt-4 text-base font-semibold text-brand-900">{{ category.name }}</p>
 
-        <div class="mt-2 flex items-center gap-3 text-xs text-slate-500">
-          <span>{{ category.professional_count }} professional{{ "s" if category.professional_count != 1 else "" }}</span>
-          {% if category.average_rating %}
-          <span class="flex items-center gap-1 font-semibold text-amber-600">
-            <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
-              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.958a1 1 0 00.95.69h4.162c.969 0 1.371 1.24.588 1.81l-3.368 2.447a1 1 0 00-.363 1.118l1.287 3.957c.3.922-.755 1.688-1.538 1.118l-3.367-2.447a1 1 0 00-1.176 0l-3.367 2.447c-.783.57-1.838-.196-1.539-1.118l1.287-3.957a1 1 0 00-.363-1.118L2.062 9.385c-.783-.57-.38-1.81.588-1.81h4.163a1 1 0 00.95-.69l1.286-3.958z" />
-            </svg>
-            {{ category.average_rating }}
-          </span>
-          {% else %}
-          <span class="text-slate-400">New</span>
-          {% endif %}
-        </div>
-
-        <span class="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-brand-700">
-          Explore
-          <svg class="h-3.5 w-3.5 transition group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+      <div class="mt-1.5 flex items-center gap-3 text-xs text-slate-500">
+        <span>{{ category.professional_count }} professional{{ "s" if category.professional_count != 1 else "" }}</span>
+        {% if category.average_rating %}
+        <span class="flex items-center gap-1 font-semibold text-amber-600">
+          <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.958a1 1 0 00.95.69h4.162c.969 0 1.371 1.24.588 1.81l-3.368 2.447a1 1 0 00-.363 1.118l1.287 3.957c.3.922-.755 1.688-1.538 1.118l-3.367-2.447a1 1 0 00-1.176 0l-3.367 2.447c-.783.57-1.838-.196-1.539-1.118l1.287-3.957a1 1 0 00-.363-1.118L2.062 9.385c-.783-.57-.38-1.81.588-1.81h4.163a1 1 0 00.95-.69l1.286-3.958z" />
           </svg>
+          {{ category.average_rating }}
         </span>
+        {% else %}
+        <span class="text-slate-400">New</span>
+        {% endif %}
       </div>
+
+      <span class="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-brand-700">
+        Explore
+        <svg class="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+        </svg>
+      </span>
     </a>
     {% endfor %}
   </div>
 
   <div class="mt-10 text-center">
     <a href="{{ url_for('browse.categories') }}" class="btn-secondary">View All Categories</a>
+  </div>
+</section>
+
+<!-- Trust & Platform Statistics -->
+<section class="border-y border-slate-100 bg-white">
+  <div class="section !py-14">
+    <div class="grid grid-cols-2 gap-8 sm:grid-cols-4">
+      {% for value, label in [
+        (stats.verified_professionals, "Verified Professionals"),
+        (stats.completed_jobs, "Completed Jobs"),
+        (stats.total_reviews, "Customer Reviews"),
+        (stats.average_rating, "Average Rating"),
+      ] %}
+      <div class="text-center">
+        <p class="text-3xl font-extrabold text-brand-900 sm:text-4xl">{{ value }}</p>
+        <p class="mt-2 text-sm text-slate-500">{{ label }}</p>
+      </div>
+      {% endfor %}
+    </div>
   </div>
 </section>
 
@@ -290,6 +299,34 @@
   </div>
 </section>
 
+<!-- Trust Benefits (temporary stand-in for Testimonials, until we have real customer reviews to show) -->
+<section class="section bg-slate-50">
+  <div class="mx-auto max-w-2xl text-center">
+    <span class="eyebrow">How We Protect You</span>
+    <h2 class="mt-3 text-3xl font-extrabold text-brand-900 sm:text-4xl">Trust isn't a promise. It's built into every step.</h2>
+  </div>
+
+  <div class="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+    {% set benefits = [
+      ("Verified Identity & Skills", "M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z", "Every professional's documents are reviewed by our team before they're marked verified."),
+      ("Real Reviews, Real Accountability", "M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.958a1 1 0 00.95.69h4.162c.969 0 1.371 1.24.588 1.81l-3.368 2.447a1 1 0 00-.363 1.118l1.287 3.957c.3.922-.755 1.688-1.538 1.118l-3.367-2.447a1 1 0 00-1.176 0l-3.367 2.447c-.783.57-1.838-.196-1.539-1.118l1.287-3.957a1 1 0 00-.363-1.118L2.062 9.385c-.783-.57-.38-1.81.588-1.81h4.163a1 1 0 00.95-.69l1.286-3.958z", "Every review is tied to a specific completed job - not a free-form rating anyone can post."),
+      ("Secure In-App Messaging", "M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z", "Contact details stay private until a booking is accepted, then you can chat directly in-app."),
+      ("Track Every Job", "M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z", "See status updates from request to completion, with a notification at every step."),
+    ] %}
+    {% for title, icon, desc in benefits %}
+    <div class="card !p-6">
+      <span class="flex h-11 w-11 items-center justify-center rounded-2xl bg-brand-50 text-brand-700">
+        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6">
+          <path stroke-linecap="round" stroke-linejoin="round" d="{{ icon }}" />
+        </svg>
+      </span>
+      <h3 class="mt-4 text-sm font-semibold text-brand-900">{{ title }}</h3>
+      <p class="mt-2 text-sm leading-relaxed text-slate-600">{{ desc }}</p>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+
 <!-- Corporate -->
 <section id="corporate" class="bg-brand-900">
   <div class="section grid items-center gap-12 lg:grid-cols-2">
@@ -312,35 +349,6 @@
       </div>
       {% endfor %}
     </div>
-  </div>
-</section>
-
-<!-- Testimonials -->
-<section class="section">
-  <div class="mx-auto max-w-2xl text-center">
-    <span class="eyebrow">What People Say</span>
-    <h2 class="mt-3 text-3xl font-extrabold text-brand-900 sm:text-4xl">Trusted by customers and professionals</h2>
-  </div>
-
-  <div class="mt-14 grid gap-8 md:grid-cols-3">
-    {% for quote, author, role in [
-      ("FidelBridge helped me find a verified plumber within minutes. No more guesswork.", "Amaka O.", "Customer, Lagos"),
-      ("As an electrician, verification gave my customers confidence to book me directly.", "Tunde A.", "Professional, Abuja"),
-      ("We now manage all our facility vendors through one corporate dashboard.", "Grace E.", "Facility Manager, Port Harcourt"),
-    ] %}
-    <div class="card !p-8">
-      <p class="text-slate-600">&ldquo;{{ quote }}&rdquo;</p>
-      <div class="mt-6 flex items-center gap-3">
-        <span class="flex h-10 w-10 items-center justify-center rounded-full bg-brand-100 font-semibold text-brand-700">
-          {{ author[0] }}
-        </span>
-        <div>
-          <p class="text-sm font-semibold text-brand-900">{{ author }}</p>
-          <p class="text-xs text-slate-500">{{ role }}</p>
-        </div>
-      </div>
-    </div>
-    {% endfor %}
   </div>
 </section>
 
