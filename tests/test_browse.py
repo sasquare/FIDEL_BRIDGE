@@ -1,3 +1,5 @@
+import re
+
 from sqlalchemy import event
 
 from app.extensions import db
@@ -51,6 +53,50 @@ def test_professionals_page_shows_partial_result_count_across_pages(client, app,
     response = client.get("/browse/professionals")
     # PER_PAGE is 12, so page 1 of 14 total professionals shows 12.
     assert b"Showing 12 of 14 professionals" in response.data
+
+
+def test_professionals_page_shows_no_chips_without_active_filters(client, app, category):
+    _make_professional(app, category)
+
+    response = client.get("/browse/professionals")
+    html = response.data.decode()
+    assert "Clear all" not in html
+
+
+def test_professionals_page_shows_active_filter_chips(client, app, category):
+    _make_professional(app, category, full_name="Chidi Okafor", email="chidi@example.com", city="Lagos")
+
+    response = client.get("/browse/professionals?q=plumber&city=Lagos&min_rating=4")
+    html = response.data.decode()
+
+    # Keyword chip label is HTML-escaped by Jinja autoescaping.
+    assert "&#34;plumber&#34;" in html
+    assert ">\n      Lagos\n" in html
+    assert "4+ Stars" in html
+    # Three active filters -> a "Clear all" link is worth showing.
+    assert "Clear all" in html
+
+
+def test_professionals_page_single_filter_chip_has_no_clear_all(client, app, category):
+    _make_professional(app, category, full_name="Chidi Okafor", email="chidi@example.com", city="Lagos")
+
+    response = client.get("/browse/professionals?city=Lagos")
+    html = response.data.decode()
+    assert ">\n      Lagos\n" in html
+    assert "Clear all" not in html
+
+
+def test_professionals_page_filter_chip_removal_link_preserves_other_filters(client, app, category):
+    _make_professional(app, category, full_name="Chidi Okafor", email="chidi@example.com", city="Lagos")
+
+    response = client.get("/browse/professionals?q=plumber&city=Lagos")
+    html = response.data.decode()
+
+    match = re.search(r'href="([^"]+)"[^>]*>\s*Lagos', html)
+    assert match, "expected to find the removable 'Lagos' city chip"
+    remove_url = match.group(1).replace("&amp;", "&")
+    assert "city=" not in remove_url
+    assert "q=plumber" in remove_url
 
 
 def test_professionals_search_filters_by_category(client, app, category):

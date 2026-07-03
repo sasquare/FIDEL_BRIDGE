@@ -55,6 +55,36 @@ def _attach_rating_summary(professionals):
         professional.search_review_count = row.review_count if row else 0
 
 
+def _build_active_filters(filters, active_category):
+    """Build removable filter chips for the search results page.
+
+    Each chip carries the current filter set with just that one key
+    cleared, so removing a chip is a single link click that preserves
+    every other filter. Sort is deliberately excluded: it's an ordering
+    preference, not a constraint that narrows the result set, so "remove"
+    doesn't apply to it the way it does to a keyword or location filter.
+    """
+    min_rating_labels = dict(MIN_RATING_OPTIONS)
+    chips = []
+
+    def add(key, label):
+        remaining = {**filters, key: ""}
+        chips.append({"key": key, "label": label, "remove_args": {k: v for k, v in remaining.items() if v}})
+
+    if filters["q"]:
+        add("q", f'"{filters["q"]}"')
+    if active_category:
+        add("category", active_category.name)
+    if filters["city"]:
+        add("city", filters["city"])
+    if filters["state"]:
+        add("state", filters["state"])
+    if filters["min_rating"]:
+        add("min_rating", min_rating_labels.get(filters["min_rating"], filters["min_rating"]))
+
+    return chips
+
+
 @browse_bp.route("/categories")
 def categories():
     all_categories = Category.query.order_by(Category.name).all()
@@ -133,6 +163,15 @@ def professionals():
     pagination = db.paginate(stmt, page=page, per_page=PER_PAGE, error_out=False)
     _attach_rating_summary(pagination.items)
 
+    filters = {
+        "category": category_slug,
+        "city": city,
+        "state": state,
+        "q": query_text,
+        "min_rating": min_rating,
+        "sort": sort_by,
+    }
+
     return render_template(
         "browse/professionals.html",
         pagination=pagination,
@@ -141,14 +180,8 @@ def professionals():
         active_category=active_category,
         sort_options=SORT_OPTIONS,
         min_rating_options=MIN_RATING_OPTIONS,
-        filters={
-            "category": category_slug,
-            "city": city,
-            "state": state,
-            "q": query_text,
-            "min_rating": min_rating,
-            "sort": sort_by,
-        },
+        filters=filters,
+        active_filters=_build_active_filters(filters, active_category),
     )
 
 
