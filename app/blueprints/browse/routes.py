@@ -1,5 +1,7 @@
 from flask import render_template, request
+from flask_sqlalchemy.pagination import Pagination
 from sqlalchemy import func, or_, select
+from sqlalchemy.orm import selectinload
 
 from app.blueprints.browse import browse_bp
 from app.extensions import db
@@ -9,8 +11,19 @@ from app.models.professional import ProfessionalProfile
 from app.models.review import Review
 from app.models.skill import Skill
 from app.models.user import User
+from app.utils.best_match import best_match_score
 
 PER_PAGE = 12
+
+# How many SQL-filtered candidates get fully scored in Python for the
+# "Most Relevant" (Best Match) sort - see _rank_by_best_match below for why
+# this can't be a single ORDER BY. Generous relative to today's actual
+# professional counts; the honest tradeoff is that a candidate ranked
+# below this cutoff by the cheap SQL pre-sort never gets a chance at
+# Python scoring, however strong its true relevance. Revisit once
+# real volume approaches this number (see the design doc's Future
+# Evolution section on Postgres full-text search).
+BEST_MATCH_CANDIDATE_POOL_CAP = 500
 
 SORT_OPTIONS = [
     ("relevance", "Most Relevant"),
@@ -19,6 +32,30 @@ SORT_OPTIONS = [
     ("newest", "Newest"),
 ]
 MIN_RATING_OPTIONS = [("", "Any Rating"), ("4", "4+ Stars"), ("3", "3+ Stars")]
+
+
+class _PrecomputedPagination(Pagination):
+    """A Pagination-compatible object built from an already-sorted,
+    already-sliced Python list, instead of running a fresh SQL query.
+
+    Best Match's composite score (app/utils/best_match.py) can't be
+    expressed as a single ORDER BY - it blends a SQL-computed candidate
+    pool with several Python-computed signals - so db.paginate() isn't an
+    option for that sort. This reuses Pagination's existing .pages/
+    .iter_pages() math (both pure functions of .total/.page/.per_page)
+    so the template needs no special-casing between the two code paths.
+    """
+
+    def __init__(self, *, page, per_page, total, items):
+        self._items = items
+        self._total = total
+        super().__init__(page=page, per_page=per_page, max_per_page=None, error_out=False, count=True)
+
+    def _query_items(self):
+        return self._items
+
+    def _query_count(self):
+        return self._total
 
 
 def _attach_rating_summary(professionals):
@@ -53,6 +90,67 @@ def _attach_rating_summary(professionals):
         row = ratings_by_id.get(professional.id)
         professional.search_average_rating = float(row.avg_rating) if row else None
         professional.search_review_count = row.review_count if row else 0
+
+
+def _matching_category_ids(query_text):
+    """Category IDs whose name matches query_text - computed once per
+    search (not per professional) for Stage 2's category-match tier."""
+    if not query_text:
+        return frozenset()
+    like = f"%{query_text}%"
+    rows = db.session.query(Category.id).filter(Category.name.ilike(like)).all()
+    return frozenset(cid for (cid,) in rows)
+
+
+def _rank_by_best_match(stmt, *, query_text, city, state, page):
+    """Fetch a bounded SQL-filtered candidate pool, score each candidate
+    with the Best Match composite in Python, and return a page of results
+    as a _PrecomputedPagination.
+
+    Mirrors the pattern already used for the homepage's Featured
+    Professionals (selectinload a bounded pool, sort in Python) - Best
+    Match's composite blends a SQL-computed relevance filter with several
+    Python-computed quality/context signals from app/utils/best_match.py,
+    which can't be expressed as one ORDER BY without duplicating that
+    logic in SQL and risking it drifting out of sync with the Python
+    version used everywhere else (dashboard, admin, public profile).
+    """
+    candidate_stmt = (
+        stmt.order_by(ProfessionalProfile.is_verified.desc(), ProfessionalProfile.created_at.desc())
+        .limit(BEST_MATCH_CANDIDATE_POOL_CAP)
+        .options(
+            # quality_score() reaches into trust_score (reviews, bookings),
+            # profile_completion_percentage (skills, portfolio_items,
+            # verifications), and response/activity scoring (bookings) - if
+            # any of these aren't eager-loaded here, scoring the candidate
+            # pool reintroduces exactly the N+1 Phase 1 removed from the
+            # rating display, just for a different set of relationships.
+            selectinload(ProfessionalProfile.user),
+            selectinload(ProfessionalProfile.skills),
+            selectinload(ProfessionalProfile.reviews),
+            selectinload(ProfessionalProfile.bookings),
+            selectinload(ProfessionalProfile.portfolio_items),
+            selectinload(ProfessionalProfile.verifications),
+        )
+    )
+    candidates = list(db.session.execute(candidate_stmt).scalars().all())
+    _attach_rating_summary(candidates)
+
+    matching_category_ids = _matching_category_ids(query_text)
+    for candidate in candidates:
+        candidate.best_match_score = best_match_score(
+            candidate,
+            query_text,
+            matching_category_ids=matching_category_ids,
+            city_filter=city or None,
+            state_filter=state or None,
+        )
+    candidates.sort(key=lambda c: c.best_match_score, reverse=True)
+
+    page = max(page, 1)
+    start = (page - 1) * PER_PAGE
+    page_items = candidates[start : start + PER_PAGE]
+    return _PrecomputedPagination(page=page, per_page=PER_PAGE, total=len(candidates), items=page_items)
 
 
 def _build_active_filters(filters, active_category):
@@ -172,16 +270,23 @@ def professionals():
 
     if sort_by == "rating":
         stmt = stmt.order_by(rating_subq.c.avg_rating.desc().nulls_last(), ProfessionalProfile.created_at.desc())
+        pagination = db.paginate(stmt, page=page, per_page=PER_PAGE, error_out=False)
+        _attach_rating_summary(pagination.items)
     elif sort_by == "reviews":
         stmt = stmt.order_by(rating_subq.c.review_count.desc().nulls_last(), ProfessionalProfile.created_at.desc())
+        pagination = db.paginate(stmt, page=page, per_page=PER_PAGE, error_out=False)
+        _attach_rating_summary(pagination.items)
     elif sort_by == "newest":
         stmt = stmt.order_by(ProfessionalProfile.created_at.desc())
+        pagination = db.paginate(stmt, page=page, per_page=PER_PAGE, error_out=False)
+        _attach_rating_summary(pagination.items)
     else:
+        # "relevance" (the default / Best Match): rating/reviews/newest are
+        # explicit, honest single-signal overrides a customer can choose,
+        # left exactly as they were - only the default sort is powered by
+        # the Best Match composite.
         sort_by = "relevance"
-        stmt = stmt.order_by(ProfessionalProfile.is_verified.desc(), ProfessionalProfile.created_at.desc())
-
-    pagination = db.paginate(stmt, page=page, per_page=PER_PAGE, error_out=False)
-    _attach_rating_summary(pagination.items)
+        pagination = _rank_by_best_match(stmt, query_text=query_text, city=city, state=state, page=page)
 
     filters = {
         "category": category_slug,

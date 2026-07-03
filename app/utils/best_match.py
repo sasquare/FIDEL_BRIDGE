@@ -181,3 +181,100 @@ def quality_score(professional, now=None):
     )
     score += cold_start_boost(professional, now)
     return round(score)
+
+
+# ---------------------------------------------------------------------------
+# Stage 4: Context Matching
+# ---------------------------------------------------------------------------
+
+# Location: graduated, not binary, because the SQL filter behind it (Phase
+# 1's city/state ILIKE) is a substring match - "Lagos" also matches "Lagos
+# Island" or "New Lagos Estate". Everyone in the candidate pool already
+# satisfied that filter (Stage 0), so this only differentiates an exact
+# match from a looser one within an already-filtered pool - it does not
+# (yet) do real geo-distance ranking. True budget-fit scoring for pricing
+# needs a customer-side budget input that doesn't exist yet either (see the
+# design doc) - this stays a weak "has pricing info at all" signal until
+# that lands.
+LOCATION_EXACT_MATCH = 100
+LOCATION_PARTIAL_MATCH = 75
+LOCATION_NO_SIGNAL = 50  # no location filter applied - neutral, not a penalty
+PRICING_INFO_PRESENT = 70
+PRICING_INFO_ABSENT = 40
+
+CONTEXT_WEIGHTS = {
+    "location": 60,
+    "pricing": 40,
+}
+
+
+def location_relevance_score(professional, city_filter=None, state_filter=None):
+    """0-100. No location filter at all is neutral (50) - Best Match
+    shouldn't invent a location preference the customer never expressed."""
+    if not city_filter and not state_filter:
+        return LOCATION_NO_SIGNAL
+
+    professional_city = (professional.city or "").strip().lower()
+    professional_state = (professional.state or "").strip().lower()
+
+    if city_filter and professional_city == city_filter.strip().lower():
+        return LOCATION_EXACT_MATCH
+    if state_filter and professional_state == state_filter.strip().lower():
+        return LOCATION_EXACT_MATCH
+    return LOCATION_PARTIAL_MATCH
+
+
+def pricing_suitability_score(professional):
+    """0-100. A weak signal only (see module docstring) - rewards simply
+    having pricing information at all, since it reduces back-and-forth
+    regardless of the specific amount."""
+    if professional.pricing_summary or professional.consultation_fee:
+        return PRICING_INFO_PRESENT
+    return PRICING_INFO_ABSENT
+
+
+def context_score(professional, city_filter=None, state_filter=None):
+    """Stage 4: fit that depends on this customer's search, beyond plain
+    text relevance - currently location and pricing; personalization is
+    the natural future occupant of this stage (see the design doc)."""
+    weights = CONTEXT_WEIGHTS
+    score = (
+        (location_relevance_score(professional, city_filter, state_filter) / 100) * weights["location"]
+        + (pricing_suitability_score(professional) / 100) * weights["pricing"]
+    )
+    return round(score)
+
+
+# ---------------------------------------------------------------------------
+# Stage 5: Composite
+# ---------------------------------------------------------------------------
+
+# Relevance is weighted highest, per the design doc's stated priority order
+# (relevance is close to non-negotiable - a highly trusted plumber is not a
+# good match for "wedding photographer"). When there's no query text,
+# relevance is 0 for every candidate uniformly, so it drops out of the
+# comparison entirely and ranking is driven by quality + context alone -
+# exactly the desired "browsing without a keyword" behavior, with no
+# special-casing required.
+BEST_MATCH_WEIGHTS = {
+    "relevance": 50,
+    "quality": 35,
+    "context": 15,
+}
+
+
+def best_match_score(professional, query_text, matching_category_ids=frozenset(), city_filter=None, state_filter=None, now=None):
+    """Stage 5: the final composite score behind the "Most Relevant" sort.
+    Higher is better; not bounded to 0-100 since quality_score's cold-start
+    boost can push slightly past it (intentional - see quality_score)."""
+    weights = BEST_MATCH_WEIGHTS
+    relevance = text_relevance_score(professional, query_text, matching_category_ids)
+    quality = quality_score(professional, now=now)
+    context = context_score(professional, city_filter=city_filter, state_filter=state_filter)
+
+    composite = (
+        (relevance / 100) * weights["relevance"]
+        + (quality / 100) * weights["quality"]
+        + (context / 100) * weights["context"]
+    )
+    return round(composite, 2)

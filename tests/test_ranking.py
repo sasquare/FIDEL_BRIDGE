@@ -18,7 +18,11 @@ from app.utils.best_match import (
     RELEVANCE_NO_MATCH,
     RELEVANCE_PROFESSION_MATCH,
     RELEVANCE_SKILL_MATCH,
+    best_match_score,
     cold_start_boost,
+    context_score,
+    location_relevance_score,
+    pricing_suitability_score,
     quality_score,
     recent_activity_score,
     response_time_score,
@@ -363,3 +367,99 @@ def test_quality_score_cold_start_boost_helps_a_new_professional_compete():
         review_count=0,
     )
     assert quality_score(new_and_verified, now=now) >= quality_score(established_but_middling, now=now)
+
+
+# ---------------------------------------------------------------------------
+# location_relevance_score / pricing_suitability_score / context_score (Stage 4)
+# ---------------------------------------------------------------------------
+
+
+def test_location_relevance_neutral_with_no_filter():
+    professional = SimpleNamespace(city="Lagos", state="Lagos")
+    assert location_relevance_score(professional) == 50
+
+
+def test_location_relevance_exact_city_beats_partial_match():
+    exact = SimpleNamespace(city="Lagos", state="Lagos")
+    partial = SimpleNamespace(city="Lagos Island", state="Lagos")
+    assert location_relevance_score(exact, city_filter="Lagos") > location_relevance_score(partial, city_filter="Lagos")
+
+
+def test_location_relevance_exact_state_match():
+    professional = SimpleNamespace(city="Ikeja", state="Lagos")
+    assert location_relevance_score(professional, state_filter="Lagos") == 100
+
+
+def test_pricing_suitability_rewards_having_pricing_info():
+    priced = SimpleNamespace(pricing_summary="Starts from N15,000", consultation_fee=None)
+    unpriced = SimpleNamespace(pricing_summary=None, consultation_fee=None)
+    assert pricing_suitability_score(priced) > pricing_suitability_score(unpriced)
+
+
+def test_context_score_combines_location_and_pricing():
+    strong = SimpleNamespace(city="Lagos", state="Lagos", pricing_summary="Starts from N15,000", consultation_fee=None)
+    weak = SimpleNamespace(city="Abuja", state="FCT", pricing_summary=None, consultation_fee=None)
+    assert context_score(strong, city_filter="Lagos") > context_score(weak, city_filter="Lagos")
+
+
+# ---------------------------------------------------------------------------
+# best_match_score (Stage 5: composite)
+# ---------------------------------------------------------------------------
+
+
+def _fake_scored_professional(**overrides):
+    now = datetime.now(timezone.utc)
+    defaults = dict(
+        full_name="Chidi Okafor",
+        profession="Plumber",
+        bio=None,
+        category_id=1,
+        skills=[],
+        city=None,
+        state=None,
+        pricing_summary=None,
+        consultation_fee=None,
+        trust_score=50,
+        average_response_minutes=None,
+        last_active_at=None,
+        is_verified=False,
+        verified_at=None,
+        review_count=0,
+    )
+    defaults.update(overrides)
+    full_name = defaults.pop("full_name")
+    professional = SimpleNamespace(user=_FakeUser(full_name), **defaults)
+    return professional, now
+
+
+def test_best_match_score_prioritizes_relevance_when_query_present():
+    exact_match, now = _fake_scored_professional(profession="Plumber", trust_score=50)
+    weak_match, _ = _fake_scored_professional(profession="Handyman", bio="Also do plumber work sometimes", trust_score=50)
+
+    exact_score = best_match_score(exact_match, "Plumber", now=now)
+    weak_score = best_match_score(weak_match, "Plumber", now=now)
+    assert exact_score > weak_score
+
+
+def test_best_match_score_falls_back_to_quality_with_no_query_text():
+    trusted, now = _fake_scored_professional(trust_score=95, is_verified=True)
+    unproven, _ = _fake_scored_professional(trust_score=20)
+
+    # No query text -> relevance is 0 for both, so quality should decide.
+    assert best_match_score(trusted, "", now=now) > best_match_score(unproven, "", now=now)
+
+
+def test_best_match_score_never_lets_an_unrelated_result_beat_a_relevant_one():
+    # In practice Stage 0's SQL filter means a completely irrelevant
+    # professional never even reaches Python scoring, but the composite
+    # itself should still behave sanely if it ever did: a strong quality
+    # score should not let a zero-relevance result outrank one with any
+    # real text match, given relevance carries the heaviest weight.
+    irrelevant_but_excellent, now = _fake_scored_professional(
+        profession="Photographer", trust_score=100, is_verified=True
+    )
+    relevant_but_unproven, _ = _fake_scored_professional(profession="Plumber", trust_score=10)
+
+    irrelevant_score = best_match_score(irrelevant_but_excellent, "Plumber", now=now)
+    relevant_score = best_match_score(relevant_but_unproven, "Plumber", now=now)
+    assert relevant_score > irrelevant_score

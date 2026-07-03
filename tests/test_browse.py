@@ -139,9 +139,11 @@ def test_professionals_search_matches_category_name(client, app, category):
     assert b"Chidi Okafor" in response.data
 
 
-def test_professionals_search_shows_ratings_without_n_plus_one(client, app, category):
+def _seed_reviewed_professionals(app, category, count, email_prefix="pro"):
     with app.app_context():
-        customer_user = User(full_name="Ada Customer", email="ada_customer@example.com", role="customer")
+        customer_user = User(
+            full_name="Ada Customer", email=f"ada_customer_{email_prefix}@example.com", role="customer"
+        )
         customer_user.set_password("supersecret")
         customer_user.customer_profile = CustomerProfile()
         db.session.add(customer_user)
@@ -149,14 +151,15 @@ def test_professionals_search_shows_ratings_without_n_plus_one(client, app, cate
         customer_profile_id = customer_user.customer_profile.id
 
     professional_ids = []
-    for i in range(3):
-        user_id = _make_professional(app, category, full_name=f"Pro {i}", email=f"pro{i}@example.com")
+    for i in range(count):
+        user_id = _make_professional(app, category, full_name=f"{email_prefix} {i}", email=f"{email_prefix}{i}@example.com")
         with app.app_context():
             user = db.session.get(User, user_id)
             professional_ids.append(user.professional_profile.id)
 
     # Two completed, reviewed bookings per professional, so the search
-    # results page has real ratings/review counts to render.
+    # results page has real ratings/review counts and quality-score inputs
+    # (Trust Score, response time, activity) to compute for every candidate.
     with app.app_context():
         for professional_id in professional_ids:
             for _ in range(2):
@@ -179,6 +182,8 @@ def test_professionals_search_shows_ratings_without_n_plus_one(client, app, cate
                 )
         db.session.commit()
 
+
+def _count_select_queries(app, client, url):
     queries = []
 
     def _record(conn, cursor, statement, parameters, context, executemany):
@@ -189,19 +194,44 @@ def test_professionals_search_shows_ratings_without_n_plus_one(client, app, cate
         engine = db.engine
     event.listen(engine, "before_cursor_execute", _record)
     try:
-        response = client.get("/browse/professionals")
+        response = client.get(url)
     finally:
         event.remove(engine, "before_cursor_execute", _record)
+    return response, queries
+
+
+def test_professionals_search_shows_ratings_without_n_plus_one(client, app, category):
+    _seed_reviewed_professionals(app, category, count=3)
+
+    response, queries = _count_select_queries(app, client, "/browse/professionals")
 
     assert response.status_code == 200
     assert b"5.0 (2)" in response.data
 
-    # A fixed, small number of SELECTs (results page, categories dropdown,
-    # count query, one aggregate rating query) regardless of how many
-    # professionals have reviews - not one extra SELECT per professional,
-    # which is what professional.average_rating/review_count would trigger
-    # via lazy-loading the full reviews relationship per card.
-    assert len(queries) <= 8, f"expected a small fixed number of queries, got {len(queries)}:\n" + "\n".join(queries)
+    # A fixed, small number of SELECTs (candidate pool, categories dropdown,
+    # batch-loaded relationships for Best Match's quality scoring, one
+    # platform-average-rating query) regardless of how many professionals
+    # have reviews - not one extra SELECT per professional, which is what
+    # professional.average_rating/review_count/trust_score would trigger
+    # via lazy-loading relationships per card.
+    assert len(queries) <= 12, f"expected a small fixed number of queries, got {len(queries)}:\n" + "\n".join(queries)
+
+
+def test_query_count_does_not_scale_with_candidate_pool_size(app, client, category):
+    # The real regression guard: query count with 3 reviewed professionals
+    # must equal query count after 9 more are added (12 total) - proving
+    # the query set is fixed (O(1)), not proportional to how many
+    # candidates get Best Match scored (O(n)).
+    _seed_reviewed_professionals(app, category, count=3, email_prefix="small")
+    _, queries_with_3 = _count_select_queries(app, client, "/browse/professionals")
+
+    _seed_reviewed_professionals(app, category, count=9, email_prefix="large")
+    _, queries_with_12 = _count_select_queries(app, client, "/browse/professionals")
+
+    assert len(queries_with_3) == len(queries_with_12), (
+        f"query count scaled with pool size: {len(queries_with_3)} queries (3 professionals) "
+        f"vs {len(queries_with_12)} queries (12 professionals) - likely a reintroduced N+1"
+    )
 
 
 def test_professional_profile_page_renders(client, app, category):

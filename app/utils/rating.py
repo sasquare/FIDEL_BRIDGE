@@ -9,6 +9,7 @@ platform-wide prior, weighted by how many real reviews they actually have.
 See the Best Match design doc, Section 3 ("Rating must never be used raw")
 and Section 4 (Cold-Start Strategy).
 """
+from flask import g
 from sqlalchemy import func
 
 from app.extensions import db
@@ -33,9 +34,21 @@ NEUTRAL_RATING_FALLBACK = 4.0
 
 def platform_average_rating():
     """The platform-wide average rating across every review, or the
-    neutral fallback if there are no reviews anywhere yet."""
-    avg = db.session.query(func.avg(Review.rating)).scalar()
-    return float(avg) if avg is not None else NEUTRAL_RATING_FALLBACK
+    neutral fallback if there are no reviews anywhere yet.
+
+    Cached on flask.g for the lifetime of the current application
+    context: every professional scored via smoothed_rating in a single
+    search request shares the same platform average, so without this
+    cache, scoring a candidate pool of N professionals would run this
+    query N times for an identical answer each time. Scoped to the
+    context, not the process, so it can never serve a stale value across
+    requests - a fresh context (the normal case, one per request) always
+    recomputes it once.
+    """
+    if not hasattr(g, "_platform_average_rating"):
+        avg = db.session.query(func.avg(Review.rating)).scalar()
+        g._platform_average_rating = float(avg) if avg is not None else NEUTRAL_RATING_FALLBACK
+    return g._platform_average_rating
 
 
 def bayesian_average(review_count, raw_average, platform_average=None):
