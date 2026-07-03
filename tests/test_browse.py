@@ -1,6 +1,11 @@
+from sqlalchemy import event
+
 from app.extensions import db
+from app.models.booking import STATUS_COMPLETED, Booking
 from app.models.category import Category
+from app.models.customer import CustomerProfile
 from app.models.professional import ProfessionalProfile
+from app.models.review import Review
 from app.models.user import User
 
 
@@ -69,6 +74,71 @@ def test_professionals_search_matches_category_name(client, app, category):
 
     response = client.get("/browse/professionals?q=Electricians")
     assert b"Chidi Okafor" in response.data
+
+
+def test_professionals_search_shows_ratings_without_n_plus_one(client, app, category):
+    with app.app_context():
+        customer_user = User(full_name="Ada Customer", email="ada_customer@example.com", role="customer")
+        customer_user.set_password("supersecret")
+        customer_user.customer_profile = CustomerProfile()
+        db.session.add(customer_user)
+        db.session.commit()
+        customer_profile_id = customer_user.customer_profile.id
+
+    professional_ids = []
+    for i in range(3):
+        user_id = _make_professional(app, category, full_name=f"Pro {i}", email=f"pro{i}@example.com")
+        with app.app_context():
+            user = db.session.get(User, user_id)
+            professional_ids.append(user.professional_profile.id)
+
+    # Two completed, reviewed bookings per professional, so the search
+    # results page has real ratings/review counts to render.
+    with app.app_context():
+        for professional_id in professional_ids:
+            for _ in range(2):
+                booking = Booking(
+                    customer_profile_id=customer_profile_id,
+                    professional_profile_id=professional_id,
+                    title="Fix the wiring",
+                    description="Kitchen socket isn't working.",
+                    status=STATUS_COMPLETED,
+                )
+                db.session.add(booking)
+                db.session.commit()
+                db.session.add(
+                    Review(
+                        booking_id=booking.id,
+                        customer_profile_id=customer_profile_id,
+                        professional_profile_id=professional_id,
+                        rating=5,
+                    )
+                )
+        db.session.commit()
+
+    queries = []
+
+    def _record(conn, cursor, statement, parameters, context, executemany):
+        if statement.strip().upper().startswith("SELECT"):
+            queries.append(statement)
+
+    with app.app_context():
+        engine = db.engine
+    event.listen(engine, "before_cursor_execute", _record)
+    try:
+        response = client.get("/browse/professionals")
+    finally:
+        event.remove(engine, "before_cursor_execute", _record)
+
+    assert response.status_code == 200
+    assert b"5.0 (2)" in response.data
+
+    # A fixed, small number of SELECTs (results page, categories dropdown,
+    # count query, one aggregate rating query) regardless of how many
+    # professionals have reviews - not one extra SELECT per professional,
+    # which is what professional.average_rating/review_count would trigger
+    # via lazy-loading the full reviews relationship per card.
+    assert len(queries) <= 8, f"expected a small fixed number of queries, got {len(queries)}:\n" + "\n".join(queries)
 
 
 def test_professional_profile_page_renders(client, app, category):

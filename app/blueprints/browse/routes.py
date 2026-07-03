@@ -21,6 +21,40 @@ SORT_OPTIONS = [
 MIN_RATING_OPTIONS = [("", "Any Rating"), ("4", "4+ Stars"), ("3", "3+ Stars")]
 
 
+def _attach_rating_summary(professionals):
+    """Attach search_average_rating/search_review_count as plain Python
+    attributes (not DB columns - same pattern as the category stats in
+    main/routes.py) computed via a single grouped aggregate query.
+
+    Deliberately NOT using ProfessionalProfile.average_rating/review_count
+    here: those properties compute from professional.reviews, which lazy-
+    loads every Review row (including comment text) per professional - an
+    N+1 that's invisible with one professional in the DB but real once
+    there are hundreds. One extra query for the whole page, vs. one per
+    card, regardless of page size.
+    """
+    professional_ids = [p.id for p in professionals]
+    if not professional_ids:
+        return
+
+    rating_rows = (
+        db.session.query(
+            Review.professional_profile_id,
+            func.avg(Review.rating).label("avg_rating"),
+            func.count(Review.id).label("review_count"),
+        )
+        .filter(Review.professional_profile_id.in_(professional_ids))
+        .group_by(Review.professional_profile_id)
+        .all()
+    )
+    ratings_by_id = {row.professional_profile_id: row for row in rating_rows}
+
+    for professional in professionals:
+        row = ratings_by_id.get(professional.id)
+        professional.search_average_rating = float(row.avg_rating) if row else None
+        professional.search_review_count = row.review_count if row else 0
+
+
 @browse_bp.route("/categories")
 def categories():
     all_categories = Category.query.order_by(Category.name).all()
@@ -97,6 +131,7 @@ def professionals():
         stmt = stmt.order_by(ProfessionalProfile.is_verified.desc(), ProfessionalProfile.created_at.desc())
 
     pagination = db.paginate(stmt, page=page, per_page=PER_PAGE, error_out=False)
+    _attach_rating_summary(pagination.items)
 
     return render_template(
         "browse/professionals.html",
