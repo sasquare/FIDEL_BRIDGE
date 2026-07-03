@@ -42,6 +42,11 @@ class ProfessionalProfile(db.Model):
 
     # Set once an admin reviews uploaded verification documents (Phase 9).
     is_verified = db.Column(db.Boolean, nullable=False, default=False, index=True)
+    # When is_verified last became True - cleared on unverify. Anchors Best
+    # Match's cold-start boost (app/utils/best_match.py): a professional who
+    # sat unverified for months and then just got approved is genuinely new
+    # in the sense that matters, even if created_at is old.
+    verified_at = db.Column(db.DateTime, nullable=True)
 
     # Public - shown on the profile, in search, and on Featured Professionals.
     profile_photo_filename = db.Column(db.String(255), nullable=True)
@@ -130,10 +135,12 @@ class ProfessionalProfile(db.Model):
         return sum(1 for booking in self.bookings if booking.status == STATUS_COMPLETED)
 
     @property
-    def average_response_time(self):
-        """Human-readable average time-to-accept, or None if there's no
+    def average_response_minutes(self):
+        """Raw average time-to-accept in minutes, or None if there's no
         accepted_at data yet (bookings accepted before this field existed,
-        or a professional who hasn't accepted anything yet)."""
+        or a professional who hasn't accepted anything yet). The numeric
+        form both average_response_time (display) and Best Match's
+        response-time scoring build on."""
         response_times = [
             (booking.accepted_at - booking.created_at).total_seconds()
             for booking in self.bookings
@@ -141,13 +148,30 @@ class ProfessionalProfile(db.Model):
         ]
         if not response_times:
             return None
+        return (sum(response_times) / len(response_times)) / 60
 
-        avg_minutes = (sum(response_times) / len(response_times)) / 60
+    @property
+    def average_response_time(self):
+        """Human-readable average time-to-accept, or None if there's no
+        accepted_at data yet."""
+        avg_minutes = self.average_response_minutes
+        if avg_minutes is None:
+            return None
         if avg_minutes < 60:
             return "Under 1 hour"
         if avg_minutes < 24 * 60:
             return f"{round(avg_minutes / 60)}h"
         return f"{round(avg_minutes / (24 * 60))}d"
+
+    @property
+    def last_active_at(self):
+        """Best available proxy for "still actually active on the
+        platform": the most recent booking-related timestamp on record.
+        Not a dedicated activity-tracking system - see the Best Match
+        design document's Future Evolution section - just the cheapest
+        honest signal available from data that already exists."""
+        timestamps = [booking.updated_at for booking in self.bookings]
+        return max(timestamps) if timestamps else None
 
     @property
     def smoothed_rating(self):

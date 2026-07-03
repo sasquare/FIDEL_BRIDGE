@@ -124,6 +124,7 @@ def professional_detail(professional_id):
 def verify_professional(professional_id):
     professional = db.get_or_404(ProfessionalProfile, professional_id)
     professional.is_verified = True
+    professional.verified_at = datetime.now(timezone.utc)
     notify(
         professional.user,
         "Congratulations! Your FidelBridge profile has been verified.",
@@ -139,6 +140,7 @@ def verify_professional(professional_id):
 def unverify_professional(professional_id):
     professional = db.get_or_404(ProfessionalProfile, professional_id)
     professional.is_verified = False
+    professional.verified_at = None
     notify(
         professional.user,
         "Your FidelBridge verification has been revoked. Please contact support for details.",

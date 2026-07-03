@@ -11,14 +11,15 @@ full architecture:
     Stage 1  Eligibility           - hard gates (already enforced by the
                                       is_active_account filter in the
                                       candidate query)
-    Stage 2  Text Relevance        - this module, text_relevance_score()
-    Stage 3  Trust & Quality       - forthcoming
+    Stage 2  Text Relevance        - text_relevance_score()
+    Stage 3  Trust & Quality       - quality_score()
     Stage 4  Context Matching      - forthcoming
     Stage 5  Composite             - forthcoming
 
 This module is built up stage by stage across several commits rather
 than landing all at once, so each stage ships independently tested.
 """
+from datetime import datetime, timezone
 
 # Tiered, not a flat "matches or doesn't": an exact profession match is a
 # much stronger relevance signal than a keyword that merely happens to
@@ -72,3 +73,111 @@ def text_relevance_score(professional, query_text, matching_category_ids=frozens
     if bio and query_lower in bio:
         return RELEVANCE_BIO_MATCH
     return RELEVANCE_NO_MATCH
+
+
+# ---------------------------------------------------------------------------
+# Stage 3: Trust & Quality
+# ---------------------------------------------------------------------------
+
+# Trust Score already blends verification, rating, review volume, completed
+# jobs and profile completion into one 0-100 number - it stays the dominant
+# input here rather than being re-derived, so there is exactly one place
+# (app/utils/trust_score.py) that defines what "trustworthy" means on
+# FidelBridge. Response time and recent activity are the two signals Best
+# Match adds on top: neither belongs in Trust Score itself (Trust Score is
+# shown and used elsewhere - dashboards, admin, the public profile - where
+# "how fast do you reply" and "are you still active" aren't the point).
+QUALITY_WEIGHTS = {
+    "trust_score": 70,
+    "response_time": 15,
+    "recent_activity": 15,
+}
+
+# A newly-verified professional with zero reviews gets a temporary,
+# decaying boost so they aren't invisible until their first booking somehow
+# happens despite that invisibility - the cold-start "death spiral"
+# described in the design document. Deliberately time-boxed and cleared the
+# moment a real review arrives, since real signal should always outrank a
+# temporary courtesy boost.
+COLD_START_BOOST_DAYS = 30
+COLD_START_BOOST_POINTS = 15
+
+
+def response_time_score(professional):
+    """0-100 based on average response time to booking requests. No data
+    yet scores as neutral (50), not zero - the same "unproven, not bad"
+    principle used for ratings (see app/utils/rating.py)."""
+    minutes = professional.average_response_minutes
+    if minutes is None:
+        return 50
+    if minutes <= 60:
+        return 100
+    if minutes <= 4 * 60:
+        return 80
+    if minutes <= 24 * 60:
+        return 60
+    if minutes <= 3 * 24 * 60:
+        return 35
+    return 15
+
+
+def _as_aware_utc(value):
+    """SQLite strips tzinfo on storage, so a datetime read back from the DB
+    is naive even though it was written via datetime.now(timezone.utc) -
+    same quirk already handled in User.query_by_valid_reset_token. Values
+    passed directly in tests are already aware and pass through unchanged."""
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value
+
+
+def recent_activity_score(professional, now=None):
+    """0-100 based on how recently the professional had any booking
+    activity. No data yet scores as neutral (50), not zero - a
+    professional who just joined hasn't had the chance to be "recently
+    active" in booking terms yet, which isn't the same as being dormant."""
+    now = now or datetime.now(timezone.utc)
+    last_active = professional.last_active_at
+    if last_active is None:
+        return 50
+    days = (now - _as_aware_utc(last_active)).total_seconds() / 86400
+    if days <= 7:
+        return 100
+    if days <= 30:
+        return 65
+    if days <= 90:
+        return 30
+    return 10
+
+
+def cold_start_boost(professional, now=None):
+    """Temporary points added on top of the weighted quality score for a
+    newly-verified professional with no reviews yet. Zero once
+    COLD_START_BOOST_DAYS have passed since verification, or the instant
+    they earn their first review - whichever comes first."""
+    if not professional.is_verified or professional.verified_at is None:
+        return 0
+    if professional.review_count > 0:
+        return 0
+
+    now = now or datetime.now(timezone.utc)
+    days_since_verified = (now - _as_aware_utc(professional.verified_at)).total_seconds() / 86400
+    if days_since_verified > COLD_START_BOOST_DAYS:
+        return 0
+    return COLD_START_BOOST_POINTS
+
+
+def quality_score(professional, now=None):
+    """Stage 3: query-independent professional quality. Can exceed 100
+    while the cold-start boost is active - intentional, so a newly-
+    verified professional can meaningfully compete against established
+    professionals with weaker quality signals during their boost window,
+    not merely narrow the gap."""
+    weights = QUALITY_WEIGHTS
+    score = (
+        (professional.trust_score / 100) * weights["trust_score"]
+        + (response_time_score(professional) / 100) * weights["response_time"]
+        + (recent_activity_score(professional, now) / 100) * weights["recent_activity"]
+    )
+    score += cold_start_boost(professional, now)
+    return round(score)

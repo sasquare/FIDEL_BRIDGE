@@ -1,3 +1,6 @@
+from datetime import datetime, timedelta, timezone
+from types import SimpleNamespace
+
 from app.extensions import db
 from app.models.booking import STATUS_COMPLETED, Booking
 from app.models.customer import CustomerProfile
@@ -5,6 +8,8 @@ from app.models.professional import ProfessionalProfile
 from app.models.review import Review
 from app.models.user import User
 from app.utils.best_match import (
+    COLD_START_BOOST_DAYS,
+    COLD_START_BOOST_POINTS,
     RELEVANCE_BIO_MATCH,
     RELEVANCE_CATEGORY_MATCH,
     RELEVANCE_EXACT_NAME,
@@ -13,6 +18,10 @@ from app.utils.best_match import (
     RELEVANCE_NO_MATCH,
     RELEVANCE_PROFESSION_MATCH,
     RELEVANCE_SKILL_MATCH,
+    cold_start_boost,
+    quality_score,
+    recent_activity_score,
+    response_time_score,
     text_relevance_score,
 )
 from app.utils.rating import NEUTRAL_RATING_FALLBACK, bayesian_average, platform_average_rating
@@ -247,3 +256,110 @@ def test_relevance_score_tiers_are_strictly_ordered():
     assert RELEVANCE_EXACT_NAME > RELEVANCE_EXACT_PROFESSION > RELEVANCE_PROFESSION_MATCH
     assert RELEVANCE_PROFESSION_MATCH > RELEVANCE_CATEGORY_MATCH > RELEVANCE_SKILL_MATCH
     assert RELEVANCE_SKILL_MATCH > RELEVANCE_NAME_MATCH > RELEVANCE_BIO_MATCH > RELEVANCE_NO_MATCH
+
+
+# ---------------------------------------------------------------------------
+# response_time_score / recent_activity_score / cold_start_boost / quality_score (Stage 3)
+# ---------------------------------------------------------------------------
+
+
+def test_response_time_score_no_data_is_neutral_not_zero():
+    professional = SimpleNamespace(average_response_minutes=None)
+    assert response_time_score(professional) == 50
+
+
+def test_response_time_score_fast_response_scores_highest():
+    professional = SimpleNamespace(average_response_minutes=30)
+    assert response_time_score(professional) == 100
+
+
+def test_response_time_score_slow_response_scores_low():
+    professional = SimpleNamespace(average_response_minutes=10 * 24 * 60)
+    assert response_time_score(professional) == 15
+
+
+def test_recent_activity_score_no_data_is_neutral_not_zero():
+    professional = SimpleNamespace(last_active_at=None)
+    assert recent_activity_score(professional) == 50
+
+
+def test_recent_activity_score_recent_activity_scores_highest():
+    now = datetime.now(timezone.utc)
+    professional = SimpleNamespace(last_active_at=now - timedelta(days=1))
+    assert recent_activity_score(professional, now=now) == 100
+
+
+def test_recent_activity_score_dormant_professional_scores_low():
+    now = datetime.now(timezone.utc)
+    professional = SimpleNamespace(last_active_at=now - timedelta(days=200))
+    assert recent_activity_score(professional, now=now) == 10
+
+
+def test_cold_start_boost_requires_verification():
+    professional = SimpleNamespace(is_verified=False, verified_at=None, review_count=0)
+    assert cold_start_boost(professional) == 0
+
+
+def test_cold_start_boost_active_for_newly_verified_professional_with_no_reviews():
+    now = datetime.now(timezone.utc)
+    professional = SimpleNamespace(is_verified=True, verified_at=now - timedelta(days=5), review_count=0)
+    assert cold_start_boost(professional, now=now) == COLD_START_BOOST_POINTS
+
+
+def test_cold_start_boost_expires_after_the_window():
+    now = datetime.now(timezone.utc)
+    professional = SimpleNamespace(
+        is_verified=True, verified_at=now - timedelta(days=COLD_START_BOOST_DAYS + 1), review_count=0
+    )
+    assert cold_start_boost(professional, now=now) == 0
+
+
+def test_cold_start_boost_clears_once_a_real_review_exists():
+    now = datetime.now(timezone.utc)
+    professional = SimpleNamespace(is_verified=True, verified_at=now - timedelta(days=1), review_count=1)
+    assert cold_start_boost(professional, now=now) == 0
+
+
+def test_quality_score_combines_trust_response_time_and_activity():
+    now = datetime.now(timezone.utc)
+    strong = SimpleNamespace(
+        trust_score=90,
+        average_response_minutes=30,
+        last_active_at=now - timedelta(days=1),
+        is_verified=True,
+        verified_at=now - timedelta(days=400),
+        review_count=20,
+    )
+    weak = SimpleNamespace(
+        trust_score=40,
+        average_response_minutes=10 * 24 * 60,
+        last_active_at=now - timedelta(days=200),
+        is_verified=False,
+        verified_at=None,
+        review_count=0,
+    )
+    assert quality_score(strong, now=now) > quality_score(weak, now=now)
+
+
+def test_quality_score_cold_start_boost_helps_a_new_professional_compete():
+    now = datetime.now(timezone.utc)
+    # Same Trust Score, same lack of response/activity data - the only
+    # difference is one was verified 400 days ago (no boost, no excuse for
+    # weak data) and the other 2 days ago with zero reviews yet (boosted).
+    established_but_middling = SimpleNamespace(
+        trust_score=55,
+        average_response_minutes=None,
+        last_active_at=None,
+        is_verified=True,
+        verified_at=now - timedelta(days=400),
+        review_count=3,
+    )
+    new_and_verified = SimpleNamespace(
+        trust_score=55,
+        average_response_minutes=None,
+        last_active_at=None,
+        is_verified=True,
+        verified_at=now - timedelta(days=2),
+        review_count=0,
+    )
+    assert quality_score(new_and_verified, now=now) >= quality_score(established_but_middling, now=now)

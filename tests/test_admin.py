@@ -108,6 +108,30 @@ def test_admin_can_approve_professional(client, app, category):
     assert admin_id  # keep reference tidy
 
 
+def test_verify_and_unverify_professional_set_and_clear_verified_at(client, app, category):
+    # verified_at anchors Best Match's cold-start boost window - it must be
+    # set the moment a professional is verified and cleared if that
+    # verification is later revoked, not left stale.
+    register_professional(client, category)
+    _create_admin(app)
+
+    with app.app_context():
+        professional_id = ProfessionalProfile.query.first().id
+
+    _login(client, "admin@example.com")
+    client.post(f"/admin/professionals/{professional_id}/verify", follow_redirects=True)
+
+    with app.app_context():
+        professional = db.session.get(ProfessionalProfile, professional_id)
+        assert professional.verified_at is not None
+
+    client.post(f"/admin/professionals/{professional_id}/unverify", follow_redirects=True)
+
+    with app.app_context():
+        professional = db.session.get(ProfessionalProfile, professional_id)
+        assert professional.verified_at is None
+
+
 def test_admin_can_approve_and_reject_verification_documents(client, app, category):
     register_professional(client, category)
     with app.app_context():
