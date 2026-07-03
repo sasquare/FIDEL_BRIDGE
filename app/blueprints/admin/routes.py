@@ -205,6 +205,7 @@ def categories():
                     slug=slugify(name),
                     icon_path=form.icon_path.data.strip() if form.icon_path.data else None,
                     description=form.description.data.strip() if form.description.data else None,
+                    image_url=form.image_url.data.strip() if form.image_url.data else None,
                 )
             )
             db.session.commit()
@@ -227,13 +228,17 @@ def categories():
 def edit_category(category_id):
     category = db.get_or_404(Category, category_id)
     form = CategoryForm(
-        name=category.name, icon_path=category.icon_path, description=category.description
+        name=category.name,
+        icon_path=category.icon_path,
+        description=category.description,
+        image_url=category.image_url,
     )
 
     if form.validate_on_submit():
         category.name = form.name.data.strip()
         category.icon_path = form.icon_path.data.strip() if form.icon_path.data else None
         category.description = form.description.data.strip() if form.description.data else None
+        category.image_url = form.image_url.data.strip() if form.image_url.data else None
         db.session.commit()
         flash("Category updated.", "success")
         return redirect(url_for("admin.categories"))

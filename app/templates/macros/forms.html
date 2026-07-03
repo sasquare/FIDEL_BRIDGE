@@ -12,6 +12,9 @@
     {{ field(class_="w-full rounded-xl border px-4 py-2.5 text-sm text-slate-900 shadow-sm transition
         placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-1
         " ~ ("border-red-300" if field.errors else "border-slate-200")) }}
+    {% if field.description %}
+      <p class="text-xs text-slate-500">{{ field.description }}</p>
+    {% endif %}
     {% for error in field.errors %}
       <p class="text-xs font-medium text-red-600">{{ error }}</p>
     {% endfor %}

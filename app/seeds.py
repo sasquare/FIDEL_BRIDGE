@@ -16,6 +16,12 @@ CATEGORIES = [
     ("Fashion Designers", "M9 3l3 3 3-3M6 6l-3 3 3 12h12l3-12-3-3", "Custom tailoring and fashion design."),
     ("Tutors", "M12 14l9-5-9-5-9 5 9 5z M12 14l6.16-3.42A12.02 12.02 0 0112 21a12.02 12.02 0 01-6.16-10.42L12 14z", "Private lessons and exam preparation."),
     ("Legal & Accounting", "M12 8c-3.5 0-6 1.5-6 4s2.5 4 6 4 6-1.5 6-4-2.5-4-6-4z M12 3v5m0 8v5", "Legal advice, bookkeeping and tax filing."),
+    ("Catering", "M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7", "Event catering, small chops and private chefs."),
+    ("Estate Developers", "M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2M5 21H3m16 0h-5v-4a1 1 0 00-1-1h-2a1 1 0 00-1 1v4H5m11-14h.01M15 7h.01M13 7h.01M11 7h.01M9 7h.01M9 11h.01M9 15h.01M13 11h.01M15 11h.01M13 15h.01M15 15h.01", "Property development, sales and management."),
+    ("Event Planners", "M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z", "Weddings, parties and corporate events."),
+    ("Movers & Logistics", "M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1", "Home and office relocation services."),
+    ("Hair & Beauty", "M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z", "Hairdressing, makeup and grooming services."),
+    ("Security Services", "M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z", "Guards, CCTV and access control."),
 ]
 
 
