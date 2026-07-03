@@ -4,8 +4,42 @@ from app.models.customer import CustomerProfile
 from app.models.professional import ProfessionalProfile
 from app.models.review import Review
 from app.models.user import User
+from app.utils.best_match import (
+    RELEVANCE_BIO_MATCH,
+    RELEVANCE_CATEGORY_MATCH,
+    RELEVANCE_EXACT_NAME,
+    RELEVANCE_EXACT_PROFESSION,
+    RELEVANCE_NAME_MATCH,
+    RELEVANCE_NO_MATCH,
+    RELEVANCE_PROFESSION_MATCH,
+    RELEVANCE_SKILL_MATCH,
+    text_relevance_score,
+)
 from app.utils.rating import NEUTRAL_RATING_FALLBACK, bayesian_average, platform_average_rating
 from app.utils.trust_score import TRUST_SCORE_WEIGHTS, compute_trust_score
+
+
+class _FakeUser:
+    def __init__(self, full_name):
+        self.full_name = full_name
+
+
+class _FakeSkill:
+    def __init__(self, name):
+        self.name = name
+
+
+class _FakeProfessional:
+    """A lightweight stand-in for ProfessionalProfile - text_relevance_score
+    only touches user.full_name, profession, bio, category_id and skills,
+    so a real DB-backed professional isn't needed to test its tiering logic."""
+
+    def __init__(self, full_name="Chidi Okafor", profession="Plumber", bio=None, category_id=1, skills=None):
+        self.user = _FakeUser(full_name)
+        self.profession = profession
+        self.bio = bio
+        self.category_id = category_id
+        self.skills = skills or []
 
 
 def _make_professional(app, category_id, full_name="Chidi Okafor", email="chidi@example.com", verified=False):
@@ -146,3 +180,70 @@ def test_trust_score_still_rewards_a_proven_high_rating_over_an_unproven_average
         strong = db.session.get(User, strong_id).professional_profile
         new = db.session.get(User, new_id).professional_profile
         assert compute_trust_score(strong) > compute_trust_score(new)
+
+
+# ---------------------------------------------------------------------------
+# text_relevance_score: tiered relevance (Stage 2)
+# ---------------------------------------------------------------------------
+
+
+def test_relevance_score_is_zero_with_no_query():
+    professional = _FakeProfessional()
+    assert text_relevance_score(professional, "") == RELEVANCE_NO_MATCH
+    assert text_relevance_score(professional, "   ") == RELEVANCE_NO_MATCH
+
+
+def test_relevance_score_exact_name_match():
+    professional = _FakeProfessional(full_name="Chidi Okafor")
+    assert text_relevance_score(professional, "Chidi Okafor") == RELEVANCE_EXACT_NAME
+
+
+def test_relevance_score_exact_profession_match():
+    professional = _FakeProfessional(profession="Plumber")
+    assert text_relevance_score(professional, "Plumber") == RELEVANCE_EXACT_PROFESSION
+
+
+def test_relevance_score_partial_profession_match():
+    professional = _FakeProfessional(profession="Master Plumber")
+    assert text_relevance_score(professional, "plumber") == RELEVANCE_PROFESSION_MATCH
+
+
+def test_relevance_score_category_match():
+    professional = _FakeProfessional(profession="Wiring Specialist", category_id=7)
+    assert text_relevance_score(professional, "electrician", matching_category_ids={7}) == RELEVANCE_CATEGORY_MATCH
+
+
+def test_relevance_score_skill_match():
+    professional = _FakeProfessional(profession="Handyman", skills=[_FakeSkill("Solar Installation")])
+    assert text_relevance_score(professional, "solar") == RELEVANCE_SKILL_MATCH
+
+
+def test_relevance_score_bio_match_is_the_weakest_real_match():
+    professional = _FakeProfessional(profession="Handyman", bio="I once fixed a generator too.")
+    assert text_relevance_score(professional, "generator") == RELEVANCE_BIO_MATCH
+
+
+def test_relevance_score_name_substring_match():
+    professional = _FakeProfessional(full_name="Chidi Okafor Electrical Services")
+    assert text_relevance_score(professional, "Okafor") == RELEVANCE_NAME_MATCH
+
+
+def test_relevance_score_no_match_returns_zero():
+    professional = _FakeProfessional(profession="Plumber", bio="Reliable plumbing services.")
+    assert text_relevance_score(professional, "photography") == RELEVANCE_NO_MATCH
+
+
+def test_relevance_score_tiers_are_strictly_ordered():
+    # A single professional who matches at every tier simultaneously must
+    # score by the *strongest* tier, not the weakest or a sum of them.
+    professional = _FakeProfessional(
+        full_name="Ada Plumber",
+        profession="Plumber",
+        bio="I do plumber-related work.",
+        category_id=3,
+        skills=[_FakeSkill("Plumber Certification")],
+    )
+    assert text_relevance_score(professional, "Plumber", matching_category_ids={3}) == RELEVANCE_EXACT_PROFESSION
+    assert RELEVANCE_EXACT_NAME > RELEVANCE_EXACT_PROFESSION > RELEVANCE_PROFESSION_MATCH
+    assert RELEVANCE_PROFESSION_MATCH > RELEVANCE_CATEGORY_MATCH > RELEVANCE_SKILL_MATCH
+    assert RELEVANCE_SKILL_MATCH > RELEVANCE_NAME_MATCH > RELEVANCE_BIO_MATCH > RELEVANCE_NO_MATCH
