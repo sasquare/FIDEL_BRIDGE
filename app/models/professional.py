@@ -67,5 +67,44 @@ class ProfessionalProfile(db.Model):
             return None
         return sum(review.rating for review in self.reviews) / len(self.reviews)
 
+    @property
+    def completed_jobs_count(self):
+        from app.models.booking import STATUS_COMPLETED
+
+        return sum(1 for booking in self.bookings if booking.status == STATUS_COMPLETED)
+
+    @property
+    def average_response_time(self):
+        """Human-readable average time-to-accept, or None if there's no
+        accepted_at data yet (bookings accepted before this field existed,
+        or a professional who hasn't accepted anything yet)."""
+        response_times = [
+            (booking.accepted_at - booking.created_at).total_seconds()
+            for booking in self.bookings
+            if booking.accepted_at is not None
+        ]
+        if not response_times:
+            return None
+
+        avg_minutes = (sum(response_times) / len(response_times)) / 60
+        if avg_minutes < 60:
+            return "Under 1 hour"
+        if avg_minutes < 24 * 60:
+            return f"{round(avg_minutes / 60)}h"
+        return f"{round(avg_minutes / (24 * 60))}d"
+
+    @property
+    def trust_score(self):
+        """A transparent 0-100 score derived entirely from real signals -
+        not a black box. Verification is weighted heaviest since it's the
+        platform's core promise; rating, review volume and completed jobs
+        are each capped so a single outlier can't dominate the score."""
+        score = 40 if self.is_verified else 0
+        if self.average_rating:
+            score += (self.average_rating / 5) * 30
+        score += min(self.review_count, 10) / 10 * 15
+        score += min(self.completed_jobs_count, 10) / 10 * 15
+        return round(score)
+
     def __repr__(self):
         return f"<ProfessionalProfile user_id={self.user_id} profession={self.profession!r}>"

@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 from flask import abort, current_app, flash, redirect, render_template, request, send_from_directory, url_for
 from flask_login import current_user
 from flask_wtf import FlaskForm
@@ -275,6 +277,7 @@ def accept_booking(booking_id):
         abort(400)
 
     booking.status = STATUS_ACCEPTED
+    booking.accepted_at = datetime.now(timezone.utc)
     notify(
         booking.customer.user,
         f"Your request ‘{booking.title}’ was accepted.",

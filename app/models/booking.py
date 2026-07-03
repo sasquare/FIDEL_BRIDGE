@@ -49,6 +49,11 @@ class Booking(db.Model):
     budget_naira = db.Column(db.Integer, nullable=True)
     status = db.Column(db.String(20), nullable=False, default=STATUS_PENDING, index=True)
 
+    # Set once, the moment a professional accepts - unlike updated_at (which
+    # gets overwritten by every later status change), this is the only
+    # reliable way to compute a professional's real average response time.
+    accepted_at = db.Column(db.DateTime, nullable=True)
+
     created_at = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
     updated_at = db.Column(
         db.DateTime,

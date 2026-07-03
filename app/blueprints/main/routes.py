@@ -1,5 +1,6 @@
 from flask import jsonify, render_template
 from sqlalchemy import func
+from sqlalchemy.orm import selectinload
 
 from app.blueprints.main import main_bp
 from app.extensions import db, limiter
@@ -7,6 +8,8 @@ from app.models.booking import STATUS_COMPLETED, Booking
 from app.models.category import Category
 from app.models.professional import ProfessionalProfile
 from app.models.review import Review
+
+FEATURED_PROFESSIONALS_COUNT = 4
 
 
 @main_bp.route("/")
@@ -47,7 +50,26 @@ def index():
         "average_rating": f"{average_rating:.1f}" if average_rating is not None else "—",
     }
 
-    return render_template("main/index.html", categories=categories, stats=stats)
+    # Only verified professionals are eligible - the section is titled
+    # "Featured Verified Professionals," so an unverified one has no
+    # business appearing in it. Ranked by trust_score (a Python property,
+    # not a DB column, so the sort happens in Python) - fine since the
+    # candidate pool is bounded to verified professionals, not the whole table.
+    verified_candidates = (
+        ProfessionalProfile.query.filter_by(is_verified=True)
+        .options(
+            selectinload(ProfessionalProfile.user),
+            selectinload(ProfessionalProfile.reviews),
+            selectinload(ProfessionalProfile.bookings),
+        )
+        .all()
+    )
+    verified_candidates.sort(key=lambda p: p.trust_score, reverse=True)
+    featured_professionals = verified_candidates[:FEATURED_PROFESSIONALS_COUNT]
+
+    return render_template(
+        "main/index.html", categories=categories, stats=stats, featured_professionals=featured_professionals
+    )
 
 
 @main_bp.route("/healthz")
