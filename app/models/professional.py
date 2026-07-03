@@ -150,6 +150,17 @@ class ProfessionalProfile(db.Model):
         return f"{round(avg_minutes / (24 * 60))}d"
 
     @property
+    def smoothed_rating(self):
+        """Bayesian-smoothed average rating - see app/utils/rating.py.
+        Used anywhere ranking/scoring needs a rating signal that's fair to
+        professionals with few or zero reviews (Trust Score, Best Match).
+        average_rating (raw, possibly None) is still what's shown directly
+        to customers - this is never displayed as-is, only used for scoring."""
+        from app.utils.rating import bayesian_average
+
+        return bayesian_average(self.review_count, self.average_rating or 0)
+
+    @property
     def pricing_summary(self):
         """Human-readable rate, e.g. "Starts from N15,000" - or None if no
         pricing model has been set. Kept as a model property (like

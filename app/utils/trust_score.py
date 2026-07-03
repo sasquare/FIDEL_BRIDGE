@@ -29,8 +29,14 @@ def compute_trust_score(professional):
     weights = TRUST_SCORE_WEIGHTS
     score = weights["verified"] if professional.is_verified else 0
 
-    if professional.average_rating:
-        score += (professional.average_rating / 5) * weights["rating"]
+    # smoothed_rating (Bayesian-blended with the platform average - see
+    # app/utils/rating.py) rather than the raw average: a professional with
+    # zero reviews previously scored 0 rating points here, identical to a
+    # professional with a genuinely poor track record. smoothed_rating is
+    # never None, so a brand-new professional now gets a neutral,
+    # platform-average rating contribution instead of a penalty for simply
+    # being new.
+    score += (professional.smoothed_rating / 5) * weights["rating"]
 
     score += min(professional.review_count, REVIEW_VOLUME_CAP) / REVIEW_VOLUME_CAP * weights["review_volume"]
     score += (
