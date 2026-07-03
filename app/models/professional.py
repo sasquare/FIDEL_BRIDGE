@@ -2,6 +2,22 @@ from datetime import datetime, timezone
 
 from app.extensions import db
 
+PROFESSIONAL_TYPE_INDIVIDUAL = "individual"
+PROFESSIONAL_TYPE_REGISTERED_BUSINESS = "registered_business"
+PROFESSIONAL_TYPES = (PROFESSIONAL_TYPE_INDIVIDUAL, PROFESSIONAL_TYPE_REGISTERED_BUSINESS)
+
+PRICING_TYPE_NOT_SPECIFIED = "not_specified"
+PRICING_TYPE_STARTS_FROM = "starts_from"
+PRICING_TYPE_HOURLY = "hourly"
+PRICING_TYPE_DAILY = "daily"
+PRICING_TYPES = (PRICING_TYPE_NOT_SPECIFIED, PRICING_TYPE_STARTS_FROM, PRICING_TYPE_HOURLY, PRICING_TYPE_DAILY)
+PRICING_TYPE_LABELS = {
+    PRICING_TYPE_NOT_SPECIFIED: "Not specified",
+    PRICING_TYPE_STARTS_FROM: "Starts from",
+    PRICING_TYPE_HOURLY: "Per hour",
+    PRICING_TYPE_DAILY: "Per day",
+}
+
 
 class ProfessionalProfile(db.Model):
     __tablename__ = "professional_profiles"
@@ -27,7 +43,47 @@ class ProfessionalProfile(db.Model):
     # Set once an admin reviews uploaded verification documents (Phase 9).
     is_verified = db.Column(db.Boolean, nullable=False, default=False, index=True)
 
+    # Public - shown on the profile, in search, and on Featured Professionals.
+    profile_photo_filename = db.Column(db.String(255), nullable=True)
+
+    # "Individual" professionals never need a business name/CAC number to
+    # reach 100% completion - only "registered_business" ones do (see
+    # app/utils/profile_completion.py). is_business_verified is deliberately
+    # separate from is_verified: a professional's identity/skills and their
+    # business registration can be reviewed independently and at different
+    # times, and conflating them now would be hard to undo later.
+    professional_type = db.Column(db.String(30), nullable=False, default=PROFESSIONAL_TYPE_INDIVIDUAL)
+    business_name = db.Column(db.String(150), nullable=True)
+    business_registration_number = db.Column(db.String(50), nullable=True)
+    is_business_verified = db.Column(db.Boolean, nullable=False, default=False)
+
+    # Flexible pricing: pricing_type/pricing_amount is the primary rate
+    # structure, while requires_inspection and consultation_fee are
+    # independent flags that can combine with any pricing_type (e.g. "Starts
+    # from N5,000, inspection required, N1,000 consultation fee") rather
+    # than forcing a single mutually-exclusive choice.
+    pricing_type = db.Column(db.String(30), nullable=False, default=PRICING_TYPE_NOT_SPECIFIED)
+    pricing_amount = db.Column(db.Integer, nullable=True)
+    requires_inspection = db.Column(db.Boolean, nullable=False, default=False)
+    consultation_fee = db.Column(db.Integer, nullable=True)
+
+    # Private - accountability info, visible only to the professional
+    # themselves and admins. NEVER reference these columns in a public
+    # template (browse/, search cards, Featured Professionals).
+    guarantor_name = db.Column(db.String(150), nullable=True)
+    guarantor_relationship = db.Column(db.String(100), nullable=True)
+    guarantor_phone = db.Column(db.String(20), nullable=True)
+    guarantor_address = db.Column(db.Text, nullable=True)
+    emergency_contact_name = db.Column(db.String(150), nullable=True)
+    emergency_contact_relationship = db.Column(db.String(100), nullable=True)
+    emergency_contact_phone = db.Column(db.String(20), nullable=True)
+
     created_at = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+
+    __table_args__ = (
+        db.CheckConstraint(professional_type.in_(PROFESSIONAL_TYPES), name="ck_professional_profiles_type_valid"),
+        db.CheckConstraint(pricing_type.in_(PRICING_TYPES), name="ck_professional_profiles_pricing_type_valid"),
+    )
 
     user = db.relationship("User", back_populates="professional_profile")
     category = db.relationship("Category", back_populates="professional_profiles")
@@ -94,17 +150,26 @@ class ProfessionalProfile(db.Model):
         return f"{round(avg_minutes / (24 * 60))}d"
 
     @property
+    def profile_completion_percentage(self):
+        from app.utils.profile_completion import profile_completion_percentage
+
+        return profile_completion_percentage(self)
+
+    @property
+    def profile_completion_checklist(self):
+        from app.utils.profile_completion import profile_completion_checklist
+
+        return profile_completion_checklist(self)
+
+    @property
     def trust_score(self):
         """A transparent 0-100 score derived entirely from real signals -
-        not a black box. Verification is weighted heaviest since it's the
-        platform's core promise; rating, review volume and completed jobs
-        are each capped so a single outlier can't dominate the score."""
-        score = 40 if self.is_verified else 0
-        if self.average_rating:
-            score += (self.average_rating / 5) * 30
-        score += min(self.review_count, 10) / 10 * 15
-        score += min(self.completed_jobs_count, 10) / 10 * 15
-        return round(score)
+        not a black box. See app/utils/trust_score.py for the weights and
+        the reasoning behind them (kept there, not here, so they can be
+        retuned without touching this model)."""
+        from app.utils.trust_score import compute_trust_score
+
+        return compute_trust_score(self)
 
     def __repr__(self):
         return f"<ProfessionalProfile user_id={self.user_id} profession={self.profession!r}>"
