@@ -135,6 +135,14 @@ class ProfessionalProfile(db.Model):
         return sum(1 for booking in self.bookings if booking.status == STATUS_COMPLETED)
 
     @property
+    def response_count(self):
+        """How many bookings this professional has actually responded to
+        (accepted_at is set) - a sample-size signal, same purpose as
+        review_count for ratings: one lucky fast reply shouldn't earn the
+        Fast Responder badge (see app/utils/badges.py)."""
+        return sum(1 for booking in self.bookings if booking.accepted_at is not None)
+
+    @property
     def average_response_minutes(self):
         """Raw average time-to-accept in minutes, or None if there's no
         accepted_at data yet (bookings accepted before this field existed,

@@ -302,3 +302,29 @@ def test_empty_state_recovery_excludes_the_active_category(client, app, category
     # other params - that exact link shouldn't exist for the category the
     # customer already searched (and got zero results from).
     assert f'href="/browse/professionals?category={slug}"' not in html
+
+
+def test_relevance_sort_shows_best_match_badge_on_top_result(client, app, category):
+    _make_professional(app, category, full_name="Chidi Okafor", email="chidi@example.com", verified=True)
+
+    response = client.get("/browse/professionals")  # default sort is "relevance"
+    html = response.data.decode()
+    assert "Best Match" in html
+    assert "Verified" in html
+
+
+def test_other_sorts_fall_back_to_plain_verified_badge(client, app, category):
+    _make_professional(app, category, full_name="Chidi Okafor", email="chidi@example.com", verified=True)
+
+    response = client.get("/browse/professionals?sort=newest")
+    html = response.data.decode()
+    assert "Best Match" not in html
+    assert "Verified" in html
+
+
+def test_unverified_professional_never_earns_best_match(client, app, category):
+    _make_professional(app, category, full_name="Chidi Okafor", email="chidi@example.com", verified=False)
+
+    response = client.get("/browse/professionals")
+    html = response.data.decode()
+    assert "Best Match" not in html

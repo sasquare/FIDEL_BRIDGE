@@ -13,11 +13,12 @@ full architecture:
                                       candidate query)
     Stage 2  Text Relevance        - text_relevance_score()
     Stage 3  Trust & Quality       - quality_score()
-    Stage 4  Context Matching      - forthcoming
-    Stage 5  Composite             - forthcoming
+    Stage 4  Context Matching      - context_score()
+    Stage 5  Composite             - best_match_score()
 
-This module is built up stage by stage across several commits rather
-than landing all at once, so each stage ships independently tested.
+Badges (customer-facing "Best Match" / "Top Rated" / etc. indicators,
+never a raw score) live in app/utils/badges.py, built from these same
+signals rather than a parallel calculation.
 """
 from datetime import datetime, timezone
 
@@ -121,11 +122,12 @@ def response_time_score(professional):
     return 15
 
 
-def _as_aware_utc(value):
+def as_aware_utc(value):
     """SQLite strips tzinfo on storage, so a datetime read back from the DB
     is naive even though it was written via datetime.now(timezone.utc) -
     same quirk already handled in User.query_by_valid_reset_token. Values
-    passed directly in tests are already aware and pass through unchanged."""
+    passed directly in tests are already aware and pass through unchanged.
+    Public (not prefixed) since app/utils/badges.py needs the same fix."""
     if value.tzinfo is None:
         return value.replace(tzinfo=timezone.utc)
     return value
@@ -140,7 +142,7 @@ def recent_activity_score(professional, now=None):
     last_active = professional.last_active_at
     if last_active is None:
         return 50
-    days = (now - _as_aware_utc(last_active)).total_seconds() / 86400
+    days = (now - as_aware_utc(last_active)).total_seconds() / 86400
     if days <= 7:
         return 100
     if days <= 30:
@@ -161,7 +163,7 @@ def cold_start_boost(professional, now=None):
         return 0
 
     now = now or datetime.now(timezone.utc)
-    days_since_verified = (now - _as_aware_utc(professional.verified_at)).total_seconds() / 86400
+    days_since_verified = (now - as_aware_utc(professional.verified_at)).total_seconds() / 86400
     if days_since_verified > COLD_START_BOOST_DAYS:
         return 0
     return COLD_START_BOOST_POINTS

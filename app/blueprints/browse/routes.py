@@ -11,7 +11,8 @@ from app.models.professional import ProfessionalProfile
 from app.models.review import Review
 from app.models.skill import Skill
 from app.models.user import User
-from app.utils.best_match import best_match_score
+from app.utils.badges import compute_badges
+from app.utils.best_match import best_match_score, quality_score
 
 PER_PAGE = 12
 
@@ -24,6 +25,19 @@ PER_PAGE = 12
 # real volume approaches this number (see the design doc's Future
 # Evolution section on Postgres full-text search).
 BEST_MATCH_CANDIDATE_POOL_CAP = 500
+
+# "Best Match" is a rank-derived badge (the #1 result of this specific
+# search), not a threshold badge like the others in app/utils/badges.py -
+# but it still must clear an absolute quality floor, or it ends up
+# labeling a technically-top-of-a-weak-list result as if it were
+# genuinely excellent. 50 is calibrated against quality_score's own
+# neutral defaults: an unverified professional with zero track record
+# tops out around 43 even with a complete profile, while any verified
+# professional starts above 53 before a single review or completed job -
+# so this floor requires at least verification, but doesn't require an
+# established track record (a newly-verified professional inside their
+# cold-start window can still qualify).
+BEST_MATCH_MIN_QUALITY = 50
 
 SORT_OPTIONS = [
     ("relevance", "Most Relevant"),
@@ -150,6 +164,18 @@ def _rank_by_best_match(stmt, *, query_text, city, state, page):
     page = max(page, 1)
     start = (page - 1) * PER_PAGE
     page_items = candidates[start : start + PER_PAGE]
+
+    # Badges are a pure display concern - computed only for the page being
+    # rendered, not the whole candidate pool, since they never influence
+    # ranking. "Best Match" is added here (not in app/utils/badges.py)
+    # because it's rank-derived: true only for the single #1 result of
+    # this specific search, and only on page 1 - it wouldn't mean
+    # anything attached to the first item of page 3.
+    for item in page_items:
+        item.badges = compute_badges(item)
+    if page == 1 and page_items and quality_score(page_items[0]) >= BEST_MATCH_MIN_QUALITY:
+        page_items[0].badges = ["best_match"] + page_items[0].badges
+
     return _PrecomputedPagination(page=page, per_page=PER_PAGE, total=len(candidates), items=page_items)
 
 
