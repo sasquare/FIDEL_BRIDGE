@@ -7,6 +7,7 @@ from flask_wtf import FlaskForm
 from app.blueprints.professional import professional_bp
 from app.extensions import db
 from app.forms.professional import (
+    AccountabilityForm,
     PortfolioItemForm,
     PricingForm,
     ProfessionalProfileForm,
@@ -43,6 +44,7 @@ def _sidebar_items():
         {"key": "skills", "label": "Skills", "url": url_for("professional.skills")},
         {"key": "portfolio", "label": "Portfolio", "url": url_for("professional.portfolio")},
         {"key": "verification", "label": "Verification", "url": url_for("professional.verification")},
+        {"key": "accountability", "label": "Accountability (Private)", "url": url_for("professional.accountability")},
     ]
 
 
@@ -189,6 +191,49 @@ def pricing():
 
     return render_template(
         "professional/pricing.html", form=form, active="pricing", sidebar_items=_sidebar_items()
+    )
+
+
+@professional_bp.route("/accountability", methods=["GET", "POST"])
+@role_required(roles.PROFESSIONAL)
+def accountability():
+    """Guarantor and emergency contact details. Private by design - only the
+    professional themselves and admins can ever see this data (see
+    AccountabilityForm and the ProfessionalProfile columns it maps to)."""
+    professional = _current_professional()
+    form = AccountabilityForm(
+        guarantor_name=professional.guarantor_name,
+        guarantor_relationship=professional.guarantor_relationship,
+        guarantor_phone=professional.guarantor_phone,
+        guarantor_address=professional.guarantor_address,
+        emergency_contact_name=professional.emergency_contact_name,
+        emergency_contact_relationship=professional.emergency_contact_relationship,
+        emergency_contact_phone=professional.emergency_contact_phone,
+    )
+
+    if form.validate_on_submit():
+        professional.guarantor_name = form.guarantor_name.data.strip() if form.guarantor_name.data else None
+        professional.guarantor_relationship = (
+            form.guarantor_relationship.data.strip() if form.guarantor_relationship.data else None
+        )
+        professional.guarantor_phone = form.guarantor_phone.data.strip() if form.guarantor_phone.data else None
+        professional.guarantor_address = form.guarantor_address.data.strip() if form.guarantor_address.data else None
+        professional.emergency_contact_name = (
+            form.emergency_contact_name.data.strip() if form.emergency_contact_name.data else None
+        )
+        professional.emergency_contact_relationship = (
+            form.emergency_contact_relationship.data.strip() if form.emergency_contact_relationship.data else None
+        )
+        professional.emergency_contact_phone = (
+            form.emergency_contact_phone.data.strip() if form.emergency_contact_phone.data else None
+        )
+
+        db.session.commit()
+        flash("Your accountability information has been updated.", "success")
+        return redirect(url_for("professional.accountability"))
+
+    return render_template(
+        "professional/accountability.html", form=form, active="accountability", sidebar_items=_sidebar_items()
     )
 
 

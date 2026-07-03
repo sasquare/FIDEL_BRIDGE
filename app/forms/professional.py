@@ -97,6 +97,25 @@ class PricingForm(FlaskForm):
     submit = SubmitField("Save Pricing")
 
 
+class AccountabilityForm(FlaskForm):
+    """Guarantor and emergency contact details. Private - never rendered on
+    any public-facing template (see app/models/professional.py)."""
+
+    guarantor_name = StringField("Guarantor Full Name", validators=[Optional(), Length(max=150)])
+    guarantor_relationship = StringField(
+        "Relationship to You", validators=[Optional(), Length(max=100)], render_kw={"placeholder": "e.g. Uncle, Former Employer"}
+    )
+    guarantor_phone = StringField("Guarantor Phone Number", validators=[Optional(), Length(max=20)])
+    guarantor_address = TextAreaField("Guarantor Address", validators=[Optional(), Length(max=1000)])
+
+    emergency_contact_name = StringField("Emergency Contact Full Name", validators=[Optional(), Length(max=150)])
+    emergency_contact_relationship = StringField(
+        "Relationship to You", validators=[Optional(), Length(max=100)], render_kw={"placeholder": "e.g. Spouse, Sibling"}
+    )
+    emergency_contact_phone = StringField("Emergency Contact Phone Number", validators=[Optional(), Length(max=20)])
+    submit = SubmitField("Save")
+
+
 class SkillForm(FlaskForm):
     name = StringField("Skill", validators=[DataRequired(), Length(max=80)], render_kw={"placeholder": "e.g. Solar Installation"})
     submit = SubmitField("Add Skill")
