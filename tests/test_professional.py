@@ -29,8 +29,12 @@ def test_dashboard_shows_profile_completion_checklist(client, category):
     register_professional(client, category)
     response = client.get("/professional/dashboard")
     assert response.status_code == 200
-    assert b"Profile Completion" in response.data
-    assert b"0/4" in response.data
+    assert b"Your Profile Strength" in response.data
+    # A freshly registered individual professional has only the
+    # "business_info" checklist item satisfied (default professional_type
+    # is "individual", which needs no business name/CAC) - 1 of 12 items.
+    assert b"8%" in response.data
+    assert b"Upload a profile photo" in response.data
 
 
 def test_profile_update_persists_availability(client, app, category):
