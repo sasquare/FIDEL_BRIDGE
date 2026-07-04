@@ -65,3 +65,27 @@ def test_dashboard_sidebar_wraps_instead_of_hiding_items_on_mobile(client, app, 
     # Every sidebar section a professional should always have access to.
     for label in ("My Profile", "Skills", "Portfolio", "Verification", "Accountability"):
         assert label in html
+
+
+def test_csp_img_src_stays_self_only_when_r2_not_configured(client):
+    # Local dev/testing: no R2 credentials, so uploads still (would) come
+    # from local disk - the CSP should stay strict.
+    response = client.get("/")
+    csp = response.headers.get("Content-Security-Policy", "")
+    assert "img-src 'self' data:;" in csp
+
+
+def test_csp_img_src_allows_r2_origin_when_configured(client, app):
+    # Regression test: profile photos/portfolio images/verification docs
+    # are served via presigned R2 URLs pointing at a different origin than
+    # fidelbridge.com. Without the R2 origin in img-src, the browser's CSP
+    # silently blocks every one of them from rendering - the file uploads
+    # fine, but the <img> never shows anything, with no server-side error
+    # to point at (the bug looks like a storage problem but isn't one).
+    app.config["R2_ACCOUNT_ID"] = "test-account-id"
+    try:
+        response = client.get("/")
+        csp = response.headers.get("Content-Security-Policy", "")
+        assert "https://test-account-id.r2.cloudflarestorage.com" in csp
+    finally:
+        app.config["R2_ACCOUNT_ID"] = None

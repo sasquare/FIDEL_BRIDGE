@@ -172,13 +172,24 @@ def register_security(app):
         # 'unsafe-eval' is required by Alpine.js's expression evaluator
         # (x-data/x-show attributes); 'unsafe-inline' on style-src covers
         # the inline width:% styles used for the admin reports bar charts.
-        # Everything else (scripts, stylesheets, fonts, images) is
-        # self-hosted, so there's no need to allow any other origin.
+        # Everything else (scripts, stylesheets, fonts) is self-hosted, so
+        # there's no need to allow any other origin.
+        img_src = "'self' data:"
+        r2_account_id = app.config.get("R2_ACCOUNT_ID")
+        if r2_account_id:
+            # Profile photos, portfolio images and verification documents
+            # are served via presigned R2 URLs (see app/utils/storage.py)
+            # pointing at this account's R2 endpoint - a different origin
+            # from fidelbridge.com, so the default 'self' data: policy
+            # would silently block every one of them from ever rendering,
+            # even though the URL itself is perfectly valid.
+            img_src += f" https://{r2_account_id}.r2.cloudflarestorage.com"
+
         response.headers["Content-Security-Policy"] = (
             "default-src 'self'; "
             "script-src 'self' 'unsafe-eval'; "
             "style-src 'self' 'unsafe-inline'; "
-            "img-src 'self' data:; "
+            f"img-src {img_src}; "
             "font-src 'self'; "
             "frame-ancestors 'none'"
         )
