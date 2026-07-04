@@ -151,6 +151,20 @@ def register_cli_commands(app):
 def register_security(app):
     @app.after_request
     def set_security_headers(response):
+        from flask import request
+        from flask_login import current_user
+
+        # Every authenticated page renders per-user state (unread
+        # notification/message badges) via a Jinja context processor -
+        # there's no client-side refresh for it. Without this header,
+        # browsers can restore a fully-rendered previous page from the
+        # back/forward cache after the user navigates back, showing a
+        # stale badge count without ever asking the server again. Scoped
+        # to authenticated, non-static responses so public pages and
+        # static assets keep their normal caching.
+        if current_user.is_authenticated and not request.path.startswith("/static/"):
+            response.headers["Cache-Control"] = "no-store"
+
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
