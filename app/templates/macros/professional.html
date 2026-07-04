@@ -1,7 +1,7 @@
 {% macro avatar(professional, size="h-12 w-12", text_size="text-lg") %}
-  {% if professional.profile_photo_filename %}
+  {% if professional.profile_photo_url %}
   <img
-    src="{{ url_for('static', filename='uploads/profile_photos/' ~ professional.profile_photo_filename) }}"
+    src="{{ professional.profile_photo_url }}"
     alt="{{ professional.user.full_name }}"
     class="{{ size }} shrink-0 rounded-full object-cover"
   />

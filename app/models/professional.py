@@ -182,6 +182,31 @@ class ProfessionalProfile(db.Model):
         return max(timestamps) if timestamps else None
 
     @property
+    def profile_photo_url(self):
+        """Public URL for the profile photo, or None if either no photo is
+        set OR the referenced file no longer exists on disk.
+
+        The upload folder lives on local disk (see app/config.py), which
+        on an ephemeral host (e.g. Render's free instance plan) is wiped
+        on every deploy/restart while the DB's profile_photo_filename
+        column persists - so profile_photo_filename being set is NOT
+        sufficient evidence the file still exists. Templates must use
+        this property, not profile_photo_filename directly, so a stale
+        DB reference falls back to the initials avatar instead of
+        rendering a permanently broken <img>."""
+        if not self.profile_photo_filename:
+            return None
+
+        from pathlib import Path
+
+        from flask import current_app, url_for
+
+        full_path = Path(current_app.config["PROFILE_PHOTO_UPLOAD_FOLDER"]) / self.profile_photo_filename
+        if not full_path.is_file():
+            return None
+        return url_for("static", filename=f"uploads/profile_photos/{self.profile_photo_filename}")
+
+    @property
     def smoothed_rating(self):
         """Bayesian-smoothed average rating - see app/utils/rating.py.
         Used anywhere ranking/scoring needs a rating signal that's fair to

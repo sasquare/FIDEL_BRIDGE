@@ -18,9 +18,9 @@
     <div class="flex flex-col gap-1.5">
       <label class="text-sm font-medium text-slate-700">Profile Photo</label>
       <div class="flex items-center gap-4">
-        {% if professional.profile_photo_filename %}
+        {% if professional.profile_photo_url %}
         <img
-          src="{{ url_for('static', filename='uploads/profile_photos/' ~ professional.profile_photo_filename) }}"
+          src="{{ professional.profile_photo_url }}"
           alt="Your profile photo"
           class="h-16 w-16 shrink-0 rounded-full object-cover"
         />

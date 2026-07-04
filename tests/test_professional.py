@@ -210,3 +210,55 @@ def test_verification_rejects_unsupported_file_type(client, category):
     )
     assert response.status_code == 200
     assert b"Images or PDF only" in response.data
+
+
+def test_profile_photo_url_is_none_when_file_missing_from_disk(client, app, category):
+    # Simulates the production bug: profile_photo_filename is set in the
+    # DB (e.g. from before an ephemeral-disk redeploy wiped the file), but
+    # the file itself no longer exists on disk. profile_photo_url must not
+    # trust the DB column alone.
+    register_professional(client, category)
+
+    with app.app_context():
+        professional = User.query.filter_by(email="tunde@example.com").first().professional_profile
+        professional.profile_photo_filename = "2/does-not-exist-on-disk.png"
+        db.session.commit()
+
+        assert professional.profile_photo_url is None
+
+
+def test_profile_photo_url_present_when_file_exists_on_disk(client, app, category):
+    register_professional(client, category)
+
+    with app.app_context():
+        professional = User.query.filter_by(email="tunde@example.com").first().professional_profile
+        professional.profile_photo_filename = "2/real-photo.png"
+        db.session.commit()
+
+        folder = app.config["PROFILE_PHOTO_UPLOAD_FOLDER"] / "2"
+        folder.mkdir(parents=True, exist_ok=True)
+        (folder / "real-photo.png").write_bytes(b"fake-png-bytes")
+
+    # profile_photo_url calls url_for(), which needs an active request
+    # context (a bare app context isn't enough) - exercised the same way
+    # the real template rendering path does.
+    with app.test_request_context():
+        professional = User.query.filter_by(email="tunde@example.com").first().professional_profile
+        assert professional.profile_photo_url is not None
+        assert "real-photo.png" in professional.profile_photo_url
+
+
+def test_profile_page_falls_back_to_initials_when_photo_file_is_missing(client, app, category):
+    register_professional(client, category)
+
+    with app.app_context():
+        professional = User.query.filter_by(email="tunde@example.com").first().professional_profile
+        professional.profile_photo_filename = "2/does-not-exist-on-disk.png"
+        db.session.commit()
+
+    response = client.get("/professional/profile")
+    html = response.data.decode()
+    assert "does-not-exist-on-disk.png" not in html
+    # The <img> tag itself must not render at all when the file is
+    # missing - only the initials fallback <span> should be present.
+    assert 'alt="Your profile photo"' not in html
