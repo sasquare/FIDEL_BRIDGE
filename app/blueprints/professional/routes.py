@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from flask import abort, current_app, flash, redirect, render_template, request, send_from_directory, url_for
+from flask import abort, flash, redirect, render_template, request, url_for
 from flask_login import current_user
 from flask_wtf import FlaskForm
 
@@ -31,7 +31,14 @@ from app.models.verification import Verification
 from app.utils.decorators import role_required
 from app.utils.messaging import unread_message_count
 from app.utils.notifications import notify
-from app.utils.uploads import delete_profile_photo, save_portfolio_image, save_profile_photo, save_verification_document
+from app.utils.uploads import (
+    delete_portfolio_image,
+    delete_profile_photo,
+    save_portfolio_image,
+    save_profile_photo,
+    save_verification_document,
+    verification_document_response,
+)
 
 
 def _sidebar_items():
@@ -310,6 +317,8 @@ def portfolio():
 def delete_portfolio_item(item_id):
     professional = _current_professional()
     item = PortfolioItem.query.filter_by(id=item_id, professional_profile_id=professional.id).first_or_404()
+    if item.image_filename:
+        delete_portfolio_image(item.image_filename)
     db.session.delete(item)
     db.session.commit()
     flash("Portfolio item removed.", "success")
@@ -355,14 +364,7 @@ def download_verification(verification_id):
     doc = Verification.query.filter_by(
         id=verification_id, professional_profile_id=professional.id
     ).first_or_404()
-
-    directory = current_app.config["VERIFICATION_UPLOAD_FOLDER"]
-    # filename is stored as "<user_id>/<random-name>.<ext>"; send_from_directory
-    # safely resolves this within `directory` and 404s on any traversal attempt.
-    try:
-        return send_from_directory(directory, doc.filename)
-    except FileNotFoundError:
-        abort(404)
+    return verification_document_response(doc.filename)
 
 
 @professional_bp.route("/bookings")

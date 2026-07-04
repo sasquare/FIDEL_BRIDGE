@@ -17,5 +17,14 @@ class PortfolioItem(db.Model):
 
     professional = db.relationship("ProfessionalProfile", back_populates="portfolio_items")
 
+    @property
+    def image_url(self):
+        """Public URL for the portfolio image, or None if no image is
+        set. See ProfessionalProfile.profile_photo_url - same delegation
+        to app/utils/uploads.py, same reasoning."""
+        from app.utils.uploads import portfolio_image_url
+
+        return portfolio_image_url(self.image_filename)
+
     def __repr__(self):
         return f"<PortfolioItem {self.title!r}>"

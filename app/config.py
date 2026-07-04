@@ -46,6 +46,17 @@ class Config:
     ALLOWED_IMAGE_EXTENSIONS = {"png", "jpg", "jpeg"}
     ALLOWED_DOCUMENT_EXTENSIONS = {"png", "jpg", "jpeg", "pdf"}
 
+    # Cloudflare R2 (S3-compatible object storage). When configured (all
+    # three vars set), app/utils/storage.py uploads/serves files here
+    # instead of local disk, so they survive Render's ephemeral filesystem
+    # across deploys and restarts (see Bug 2). When not configured (local
+    # dev/testing), storage.py falls back to the *_UPLOAD_FOLDER paths
+    # above unchanged - no R2 account needed to run the app locally.
+    R2_ACCOUNT_ID = os.environ.get("R2_ACCOUNT_ID")
+    R2_ACCESS_KEY_ID = os.environ.get("R2_ACCESS_KEY_ID")
+    R2_SECRET_ACCESS_KEY = os.environ.get("R2_SECRET_ACCESS_KEY")
+    R2_BUCKET_NAME = os.environ.get("R2_BUCKET_NAME", "fidelbridge-files")
+
     # Optional outbound email (password reset). If MAIL_SERVER isn't set,
     # app/utils/mail.py logs the message instead of sending it, so the
     # reset flow works locally without real SMTP credentials.

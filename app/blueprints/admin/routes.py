@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from flask import abort, current_app, flash, redirect, render_template, request, send_from_directory, url_for
+from flask import abort, flash, redirect, render_template, request, url_for
 from flask_wtf import FlaskForm
 from sqlalchemy import func, or_
 
@@ -32,6 +32,7 @@ from app.models.verification import Verification
 from app.utils.decorators import role_required
 from app.utils.notifications import notify
 from app.utils.text import slugify
+from app.utils.uploads import verification_document_response
 
 PER_PAGE = 20
 
@@ -203,11 +204,7 @@ def reject_verification(verification_id):
 @role_required(roles.ADMIN)
 def download_verification(verification_id):
     doc = db.get_or_404(Verification, verification_id)
-    directory = current_app.config["VERIFICATION_UPLOAD_FOLDER"]
-    try:
-        return send_from_directory(directory, doc.filename)
-    except FileNotFoundError:
-        abort(404)
+    return verification_document_response(doc.filename)
 
 
 # ---------------------------------------------------------------------------

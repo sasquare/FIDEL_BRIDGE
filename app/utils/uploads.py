@@ -1,59 +1,71 @@
-import uuid
-from pathlib import Path
-
+"""Thin, category-specific wrappers around app/utils/storage.py's backend
+abstraction (local disk in dev/testing, Cloudflare R2 in production).
+Route code imports from here rather than storage.py directly, so each
+call site doesn't need to repeat the local-folder-config-key/prefix pair
+for its category.
+"""
 from flask import current_app
-from werkzeug.utils import secure_filename
 
-
-def _extension(filename):
-    return Path(secure_filename(filename)).suffix.lower().lstrip(".")
-
-
-def _save(file_storage, base_folder, user_id, allowed_extensions):
-    """Save an upload under base_folder/<user_id>/<random-name>.<ext>.
-
-    Returns the "<user_id>/<random-name>.<ext>" relative path to store in the
-    database, which is enough to locate the file again without ever trusting
-    the uploader's original filename.
-    """
-    ext = _extension(file_storage.filename)
-    if ext not in allowed_extensions:
-        raise ValueError(f"Unsupported file type: .{ext}")
-
-    folder = Path(base_folder) / str(user_id)
-    folder.mkdir(parents=True, exist_ok=True)
-
-    stored_name = f"{uuid.uuid4().hex}.{ext}"
-    file_storage.save(folder / stored_name)
-    return f"{user_id}/{stored_name}"
+from app.utils import storage
 
 
 def save_portfolio_image(file_storage, user_id):
-    return _save(
-        file_storage, current_app.config["PORTFOLIO_UPLOAD_FOLDER"], user_id, current_app.config["ALLOWED_IMAGE_EXTENSIONS"]
+    return storage.save(
+        file_storage,
+        local_folder_config_key="PORTFOLIO_UPLOAD_FOLDER",
+        r2_prefix="portfolio",
+        user_id=user_id,
+        allowed_extensions=current_app.config["ALLOWED_IMAGE_EXTENSIONS"],
+    )
+
+
+def delete_portfolio_image(key):
+    storage.delete(key, local_folder_config_key="PORTFOLIO_UPLOAD_FOLDER", r2_prefix="portfolio")
+
+
+def portfolio_image_url(key):
+    return storage.public_url(
+        key,
+        local_folder_config_key="PORTFOLIO_UPLOAD_FOLDER",
+        r2_prefix="portfolio",
+        static_subpath="uploads/portfolio",
     )
 
 
 def save_verification_document(file_storage, user_id):
-    return _save(
+    return storage.save(
         file_storage,
-        current_app.config["VERIFICATION_UPLOAD_FOLDER"],
-        user_id,
-        current_app.config["ALLOWED_DOCUMENT_EXTENSIONS"],
+        local_folder_config_key="VERIFICATION_UPLOAD_FOLDER",
+        r2_prefix="verifications",
+        user_id=user_id,
+        allowed_extensions=current_app.config["ALLOWED_DOCUMENT_EXTENSIONS"],
+    )
+
+
+def verification_document_response(key):
+    return storage.private_download_response(
+        key, local_folder_config_key="VERIFICATION_UPLOAD_FOLDER", r2_prefix="verifications"
     )
 
 
 def save_profile_photo(file_storage, user_id):
-    return _save(
+    return storage.save(
         file_storage,
-        current_app.config["PROFILE_PHOTO_UPLOAD_FOLDER"],
-        user_id,
-        current_app.config["ALLOWED_IMAGE_EXTENSIONS"],
+        local_folder_config_key="PROFILE_PHOTO_UPLOAD_FOLDER",
+        r2_prefix="profile_photos",
+        user_id=user_id,
+        allowed_extensions=current_app.config["ALLOWED_IMAGE_EXTENSIONS"],
     )
 
 
-def delete_profile_photo(relative_path):
-    """Best-effort delete of a previous profile photo when it's replaced.
-    Missing files are not an error - the DB row is the source of truth."""
-    path = Path(current_app.config["PROFILE_PHOTO_UPLOAD_FOLDER"]) / relative_path
-    path.unlink(missing_ok=True)
+def delete_profile_photo(key):
+    storage.delete(key, local_folder_config_key="PROFILE_PHOTO_UPLOAD_FOLDER", r2_prefix="profile_photos")
+
+
+def profile_photo_url(key):
+    return storage.public_url(
+        key,
+        local_folder_config_key="PROFILE_PHOTO_UPLOAD_FOLDER",
+        r2_prefix="profile_photos",
+        static_subpath="uploads/profile_photos",
+    )

@@ -122,8 +122,8 @@
       <div class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {% for item in professional.portfolio_items %}
         <div class="overflow-hidden rounded-2xl border border-slate-100">
-          {% if item.image_filename %}
-          <img src="{{ url_for('static', filename='uploads/portfolio/' ~ item.image_filename) }}" alt="{{ item.title }}" class="h-36 w-full object-cover" />
+          {% if item.image_url %}
+          <img src="{{ item.image_url }}" alt="{{ item.title }}" class="h-36 w-full object-cover" />
           {% endif %}
           <div class="p-4">
             <p class="text-sm font-semibold text-brand-900">{{ item.title }}</p>
