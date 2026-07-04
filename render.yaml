@@ -48,6 +48,18 @@ services:
         sync: false
       - key: MAIL_DEFAULT_SENDER
         sync: false
+      # Cloudflare R2 (durable file storage - see app/utils/storage.py).
+      # sync: false means Render prompts for these in the dashboard rather
+      # than storing them here. Until all three are set, uploads fall back
+      # to local disk, which does not survive a redeploy on this plan.
+      - key: R2_ACCOUNT_ID
+        sync: false
+      - key: R2_ACCESS_KEY_ID
+        sync: false
+      - key: R2_SECRET_ACCESS_KEY
+        sync: false
+      - key: R2_BUCKET_NAME
+        value: fidelbridge-files
 
 databases:
   - name: fidelbridge-db
