@@ -9,12 +9,19 @@
 
 <div class="card mt-8 max-w-xl !p-8">
   <h2 class="text-lg font-semibold text-brand-900">Add a Category</h2>
-  <form method="POST" novalidate class="mt-5 flex flex-col gap-5">
+  <form method="POST" enctype="multipart/form-data" novalidate class="mt-5 flex flex-col gap-5">
     {{ form.hidden_tag() }}
     {{ render_form_errors(form) }}
     {{ render_field(form.name) }}
     {{ render_field(form.icon_path) }}
     {{ render_field(form.description) }}
+    <div class="flex flex-col gap-1.5">
+      <label for="{{ form.image.id }}" class="text-sm font-medium text-slate-700">{{ form.image.label.text }}</label>
+      {{ form.image(class_="w-full text-sm text-slate-600 file:mr-4 file:rounded-full file:border-0 file:bg-brand-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-brand-700 hover:file:bg-brand-100") }}
+      {% for error in form.image.errors %}
+      <p class="mt-1 text-xs font-medium text-red-600">{{ error }}</p>
+      {% endfor %}
+    </div>
     {{ render_field(form.image_url) }}
     {{ form.submit(class_="btn-primary mt-2 w-full sm:w-auto") }}
   </form>
@@ -26,7 +33,9 @@
     {% for category in categories %}
     <div class="card flex flex-wrap items-center justify-between gap-3 !p-5">
       <div class="flex items-center gap-3">
-        {% if category.icon_path %}
+        {% if category.image_display_url %}
+        <img src="{{ category.image_display_url }}" alt="{{ category.name }}" class="h-10 w-10 shrink-0 rounded-full object-cover" />
+        {% elif category.icon_path %}
         <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-50 text-brand-700">
           <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
             <path stroke-linecap="round" stroke-linejoin="round" d="{{ category.icon_path }}" />

@@ -42,6 +42,8 @@ class Config:
     # (gitignored, outside static/) and are only reachable via an
     # authenticated, ownership-checked download route.
     VERIFICATION_UPLOAD_FOLDER = BASE_DIR / "instance" / "uploads" / "verifications"
+    # Category photos shown on the homepage - public, same static/ pattern.
+    CATEGORY_IMAGE_UPLOAD_FOLDER = BASE_DIR / "app" / "static" / "uploads" / "categories"
 
     ALLOWED_IMAGE_EXTENSIONS = {"png", "jpg", "jpeg"}
     ALLOWED_DOCUMENT_EXTENSIONS = {"png", "jpg", "jpeg", "pdf"}
@@ -84,6 +86,7 @@ class TestingConfig(Config):
     PORTFOLIO_UPLOAD_FOLDER = _TEST_UPLOAD_ROOT / "portfolio"
     VERIFICATION_UPLOAD_FOLDER = _TEST_UPLOAD_ROOT / "verifications"
     PROFILE_PHOTO_UPLOAD_FOLDER = _TEST_UPLOAD_ROOT / "profile_photos"
+    CATEGORY_IMAGE_UPLOAD_FOLDER = _TEST_UPLOAD_ROOT / "categories"
 
 
 class ProductionConfig(Config):

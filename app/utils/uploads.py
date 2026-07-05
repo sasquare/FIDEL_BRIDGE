@@ -14,7 +14,7 @@ def save_portfolio_image(file_storage, user_id):
         file_storage,
         local_folder_config_key="PORTFOLIO_UPLOAD_FOLDER",
         r2_prefix="portfolio",
-        user_id=user_id,
+        owner_id=user_id,
         allowed_extensions=current_app.config["ALLOWED_IMAGE_EXTENSIONS"],
     )
 
@@ -37,7 +37,7 @@ def save_verification_document(file_storage, user_id):
         file_storage,
         local_folder_config_key="VERIFICATION_UPLOAD_FOLDER",
         r2_prefix="verifications",
-        user_id=user_id,
+        owner_id=user_id,
         allowed_extensions=current_app.config["ALLOWED_DOCUMENT_EXTENSIONS"],
     )
 
@@ -53,7 +53,7 @@ def save_profile_photo(file_storage, user_id):
         file_storage,
         local_folder_config_key="PROFILE_PHOTO_UPLOAD_FOLDER",
         r2_prefix="profile_photos",
-        user_id=user_id,
+        owner_id=user_id,
         allowed_extensions=current_app.config["ALLOWED_IMAGE_EXTENSIONS"],
     )
 
@@ -68,4 +68,27 @@ def profile_photo_url(key):
         local_folder_config_key="PROFILE_PHOTO_UPLOAD_FOLDER",
         r2_prefix="profile_photos",
         static_subpath="uploads/profile_photos",
+    )
+
+
+def save_category_image(file_storage, category_id):
+    return storage.save(
+        file_storage,
+        local_folder_config_key="CATEGORY_IMAGE_UPLOAD_FOLDER",
+        r2_prefix="categories",
+        owner_id=category_id,
+        allowed_extensions=current_app.config["ALLOWED_IMAGE_EXTENSIONS"],
+    )
+
+
+def delete_category_image(key):
+    storage.delete(key, local_folder_config_key="CATEGORY_IMAGE_UPLOAD_FOLDER", r2_prefix="categories")
+
+
+def category_image_url(key):
+    return storage.public_url(
+        key,
+        local_folder_config_key="CATEGORY_IMAGE_UPLOAD_FOLDER",
+        r2_prefix="categories",
+        static_subpath="uploads/categories",
     )

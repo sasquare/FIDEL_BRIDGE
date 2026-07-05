@@ -59,15 +59,17 @@ def _extension(filename):
     return Path(secure_filename(filename)).suffix.lower().lstrip(".")
 
 
-def save(file_storage, *, local_folder_config_key, r2_prefix, user_id, allowed_extensions):
-    """Save an upload, returning "<user_id>/<random-name>.<ext>" - the
-    same key shape regardless of backend."""
+def save(file_storage, *, local_folder_config_key, r2_prefix, owner_id, allowed_extensions):
+    """Save an upload, returning "<owner_id>/<random-name>.<ext>" - the
+    same key shape regardless of backend. owner_id just namespaces the
+    key (a user ID for photos/documents, a category ID for category
+    images, etc.) - it doesn't need to reference an actual User row."""
     ext = _extension(file_storage.filename)
     if ext not in allowed_extensions:
         raise ValueError(f"Unsupported file type: .{ext}")
 
     stored_name = f"{uuid.uuid4().hex}.{ext}"
-    key = f"{user_id}/{stored_name}"
+    key = f"{owner_id}/{stored_name}"
 
     if r2_enabled():
         file_storage.stream.seek(0)
@@ -79,7 +81,7 @@ def save(file_storage, *, local_folder_config_key, r2_prefix, user_id, allowed_e
             ExtraArgs=extra_args,
         )
     else:
-        folder = Path(current_app.config[local_folder_config_key]) / str(user_id)
+        folder = Path(current_app.config[local_folder_config_key]) / str(owner_id)
         folder.mkdir(parents=True, exist_ok=True)
         file_storage.save(folder / stored_name)
 

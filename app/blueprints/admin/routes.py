@@ -32,7 +32,7 @@ from app.models.verification import Verification
 from app.utils.decorators import role_required
 from app.utils.notifications import notify
 from app.utils.text import slugify
-from app.utils.uploads import verification_document_response
+from app.utils.uploads import delete_category_image, save_category_image, verification_document_response
 
 PER_PAGE = 20
 
@@ -223,13 +223,16 @@ def categories():
         if Category.query.filter_by(name=name).first():
             flash("A category with that name already exists.", "error")
         else:
+            slug = slugify(name)
+            image_filename = save_category_image(form.image.data, slug) if form.image.data else None
             db.session.add(
                 Category(
                     name=name,
-                    slug=slugify(name),
+                    slug=slug,
                     icon_path=form.icon_path.data.strip() if form.icon_path.data else None,
                     description=form.description.data.strip() if form.description.data else None,
                     image_url=form.image_url.data.strip() if form.image_url.data else None,
+                    image_filename=image_filename,
                 )
             )
             db.session.commit()
@@ -263,6 +266,13 @@ def edit_category(category_id):
         category.icon_path = form.icon_path.data.strip() if form.icon_path.data else None
         category.description = form.description.data.strip() if form.description.data else None
         category.image_url = form.image_url.data.strip() if form.image_url.data else None
+
+        if form.image.data:
+            old_image = category.image_filename
+            category.image_filename = save_category_image(form.image.data, category.slug)
+            if old_image:
+                delete_category_image(old_image)
+
         db.session.commit()
         flash("Category updated.", "success")
         return redirect(url_for("admin.categories"))
@@ -283,6 +293,8 @@ def delete_category(category_id):
     if category.professional_profiles:
         flash("Can't delete a category that still has professionals assigned to it.", "error")
     else:
+        if category.image_filename:
+            delete_category_image(category.image_filename)
         db.session.delete(category)
         db.session.commit()
         flash("Category deleted.", "success")

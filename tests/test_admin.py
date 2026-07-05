@@ -192,6 +192,51 @@ def test_admin_can_create_and_delete_category(client, app):
         assert db.session.get(Category, category_id) is None
 
 
+def test_admin_can_upload_and_replace_category_image(client, app):
+    import io
+
+    _create_admin(app)
+    _login(client, "admin@example.com")
+
+    fake_image = (io.BytesIO(b"\xff\xd8\xff\xe0fakejpegdata"), "photo.jpg")
+    response = client.post(
+        "/admin/categories",
+        data={"name": "Landscapers", "icon_path": "", "description": "", "image": fake_image},
+        content_type="multipart/form-data",
+        follow_redirects=True,
+    )
+    assert response.status_code == 200
+    assert b"Category created" in response.data
+
+    with app.app_context():
+        category = Category.query.filter_by(name="Landscapers").first()
+        assert category.image_filename is not None
+        category_id = category.id
+        old_filename = category.image_filename
+
+    with app.test_request_context():
+        category = db.session.get(Category, category_id)
+        assert category.image_display_url is not None
+
+    new_image = (io.BytesIO(b"\xff\xd8\xff\xe0newjpegdata"), "new-photo.jpg")
+    response = client.post(
+        f"/admin/categories/{category_id}/edit",
+        data={"name": "Landscapers", "icon_path": "", "description": "", "image": new_image},
+        content_type="multipart/form-data",
+        follow_redirects=True,
+    )
+    assert response.status_code == 200
+    assert b"Category updated" in response.data
+
+    with app.app_context():
+        category = db.session.get(Category, category_id)
+        assert category.image_filename is not None
+        assert category.image_filename != old_filename
+        # The old file is deleted when replaced, not left orphaned on disk.
+        old_path = app.config["CATEGORY_IMAGE_UPLOAD_FOLDER"] / old_filename
+        assert not old_path.exists()
+
+
 def test_admin_cannot_delete_category_with_professionals(client, app, category):
     register_professional(client, category)
     _create_admin(app)

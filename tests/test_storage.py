@@ -49,7 +49,7 @@ def test_save_uploads_to_r2_when_enabled(app):
                     _fake_file(),
                     local_folder_config_key="PROFILE_PHOTO_UPLOAD_FOLDER",
                     r2_prefix="profile_photos",
-                    user_id=7,
+                    owner_id=7,
                     allowed_extensions={"png", "jpg", "jpeg"},
                 )
             assert key.startswith("7/")
@@ -138,3 +138,39 @@ def test_delete_calls_r2_delete_object_when_enabled(app):
             )
         finally:
             app.config["R2_ACCOUNT_ID"] = None
+
+
+def test_save_category_image_uploads_to_r2_when_enabled(app):
+    from app.utils.uploads import save_category_image
+
+    with app.app_context():
+        app.config["R2_ACCOUNT_ID"] = "test-account"
+        app.config["R2_ACCESS_KEY_ID"] = "test-key"
+        app.config["R2_SECRET_ACCESS_KEY"] = "test-secret"
+        app.config["R2_BUCKET_NAME"] = "fidelbridge-files"
+        try:
+            fake_client = MagicMock()
+            with patch("app.utils.storage._r2_client", return_value=fake_client):
+                key = save_category_image(_fake_file(), "electricians")
+            assert key.startswith("electricians/")
+            args, kwargs = fake_client.upload_fileobj.call_args
+            assert args[2] == f"categories/{key}"
+        finally:
+            app.config["R2_ACCOUNT_ID"] = None
+
+
+def test_category_image_url_returns_none_for_missing_file_in_dev(app):
+    from app.utils.uploads import category_image_url
+
+    with app.test_request_context():
+        assert category_image_url("does-not-exist/photo.png") is None
+
+
+def test_category_image_url_present_after_save_in_dev(app):
+    from app.utils.uploads import category_image_url, save_category_image
+
+    with app.test_request_context():
+        key = save_category_image(_fake_file(), "electricians")
+        url = category_image_url(key)
+        assert url is not None
+        assert "electricians" in url
