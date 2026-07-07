@@ -69,6 +69,13 @@ class Config:
     MAIL_PASSWORD = os.environ.get("MAIL_PASSWORD")
     MAIL_DEFAULT_SENDER = os.environ.get("MAIL_DEFAULT_SENDER", "no-reply@fidelbridge.com")
 
+    # Absolute base URL used only for links inside emails sent from a
+    # non-request context (the profile-completion reminder CLI job runs on a
+    # schedule, not inside an HTTP request, so url_for(..., _external=True)
+    # has no request to infer a host from). Emails sent during a real
+    # request build their links the same way, for consistency.
+    APP_BASE_URL = os.environ.get("APP_BASE_URL", "http://localhost:5000")
+
 
 class DevelopmentConfig(Config):
     DEBUG = True

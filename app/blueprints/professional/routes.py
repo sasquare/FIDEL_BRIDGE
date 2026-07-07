@@ -31,6 +31,7 @@ from app.models.verification import Verification
 from app.utils.decorators import role_required
 from app.utils.messaging import unread_message_count
 from app.utils.notifications import notify
+from app.utils.profile_emails import maybe_send_completion_congrats
 from app.utils.uploads import (
     delete_portfolio_image,
     delete_profile_photo,
@@ -152,6 +153,7 @@ def profile():
             if old_photo:
                 delete_profile_photo(old_photo)
 
+        maybe_send_completion_congrats(professional)
         db.session.commit()
         flash("Your profile has been updated.", "success")
         return redirect(url_for("professional.profile"))
@@ -192,6 +194,7 @@ def pricing():
         professional.requires_inspection = form.requires_inspection.data
         professional.consultation_fee = form.consultation_fee.data
 
+        maybe_send_completion_congrats(professional)
         db.session.commit()
         flash("Your pricing information has been updated.", "success")
         return redirect(url_for("professional.pricing"))
@@ -235,6 +238,7 @@ def accountability():
             form.emergency_contact_phone.data.strip() if form.emergency_contact_phone.data else None
         )
 
+        maybe_send_completion_congrats(professional)
         db.session.commit()
         flash("Your accountability information has been updated.", "success")
         return redirect(url_for("professional.accountability"))
@@ -253,6 +257,7 @@ def skills():
 
     if form.validate_on_submit():
         db.session.add(Skill(professional_profile_id=professional.id, name=form.name.data.strip()))
+        maybe_send_completion_congrats(professional)
         db.session.commit()
         flash("Skill added.", "success")
         return redirect(url_for("professional.skills"))
@@ -298,6 +303,7 @@ def portfolio():
                 image_filename=image_filename,
             )
         )
+        maybe_send_completion_congrats(professional)
         db.session.commit()
         flash("Portfolio item added.", "success")
         return redirect(url_for("professional.portfolio"))
@@ -344,6 +350,7 @@ def verification():
                     filename=filename,
                 )
             )
+            maybe_send_completion_congrats(professional)
             db.session.commit()
             flash("Document uploaded and pending review.", "success")
         return redirect(url_for("professional.verification"))

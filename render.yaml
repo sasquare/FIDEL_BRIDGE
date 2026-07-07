@@ -60,6 +60,23 @@ services:
         sync: false
       - key: R2_BUCKET_NAME
         value: fidelbridge-files
+      # Absolute base URL used only for links inside profile-completion
+      # campaign emails (app/utils/profile_emails.py) sent from the
+      # `flask send-profile-completion-reminders` CLI job, which runs
+      # outside any HTTP request and so has no Host header to infer this
+      # from. Set to whatever your live domain actually resolves to
+      # (fidelbridge.com once DNS is confirmed, or the onrender.com URL
+      # otherwise).
+      - key: APP_BASE_URL
+        sync: false
+      # `flask send-profile-completion-reminders` sends any due day-3/7/14
+      # profile completion reminder emails - see app/utils/profile_emails.py.
+      # It's a one-off CLI command, not scheduled by this Blueprint: add a
+      # Render Cron Job service pointing at it (if available on your plan),
+      # or trigger it from any external scheduler (e.g. a scheduled GitHub
+      # Action running `flask send-profile-completion-reminders` against
+      # this service). It's safe to run on any cadence - re-running never
+      # sends a duplicate.
 
 databases:
   - name: fidelbridge-db

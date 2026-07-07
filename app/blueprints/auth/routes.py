@@ -21,6 +21,7 @@ from app.models.professional import ProfessionalProfile
 from app.models.user import User
 from app.utils.auth_helpers import dashboard_url_for
 from app.utils.mail import send_email
+from app.utils.profile_emails import send_welcome_email
 
 
 def _is_safe_redirect_target(target):
@@ -90,6 +91,12 @@ def register_professional():
         )
 
         db.session.add(user)
+        db.session.commit()
+
+        # Sent after the account is safely committed - a failed send is
+        # logged, never raised, so it can't turn a successful registration
+        # into an error page (see send_welcome_email's docstring).
+        send_welcome_email(user.professional_profile)
         db.session.commit()
 
         login_user(user)

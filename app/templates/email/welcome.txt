@@ -1,0 +1,21 @@
+Hello {{ first_name }},
+
+Welcome to FidelBridge!
+
+We're excited to have you join our growing community of trusted professionals.
+
+To maximize your visibility and increase your chances of getting hired, please complete your professional profile.
+
+Professionals with a high Trust Score are more visible across FidelBridge and are recommended to customers more frequently than professionals with incomplete profiles.
+
+A complete profile builds trust and increases your chances of winning jobs.
+
+Complete the following:
+{% for item in checklist_items %}- {{ item.label }}
+{% endfor %}
+Complete My Profile: {{ cta_url }}
+
+Thank you for choosing FidelBridge.
+We look forward to helping you connect with more customers and grow your business.
+
+The FidelBridge Team

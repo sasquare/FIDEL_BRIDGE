@@ -1,0 +1,17 @@
+Hello {{ first_name }},
+
+Congratulations!
+
+You've successfully completed your FidelBridge profile.
+
+Your profile is now fully optimized and ready to be discovered by customers.
+
+A complete profile helps increase customer confidence and contributes positively to your Trust Score.
+
+Keep your information up to date, continue delivering excellent service, and earn positive reviews to strengthen your reputation on FidelBridge.
+
+Thank you for choosing FidelBridge.
+
+We look forward to seeing your business grow.
+
+— The FidelBridge Team

@@ -1,0 +1,14 @@
+{% extends "email/layout.html" %}
+{% from "macros/email.html" import cta_button, checklist %}
+{% block title %}Complete Your FidelBridge Profile & Increase Your Trust Score{% endblock %}
+{% block content %}
+<p style="margin:0 0 16px;">Hello {{ first_name }},</p>
+<p style="margin:0 0 16px;">Welcome to FidelBridge!</p>
+<p style="margin:0 0 16px;">We're excited to have you join our growing community of trusted professionals.</p>
+<p style="margin:0 0 16px;">To maximize your visibility and increase your chances of getting hired, please complete your professional profile.</p>
+<p style="margin:0 0 16px;">Professionals with a high Trust Score are more visible across FidelBridge and are recommended to customers more frequently than professionals with incomplete profiles.</p>
+<p style="margin:0 0 16px;">A complete profile builds trust and increases your chances of winning jobs.</p>
+<p style="margin:0 0 8px;font-weight:bold;">Complete the following:</p>
+{{ checklist(checklist_items) }}
+{{ cta_button(cta_url, "Complete My Profile") }}
+{% endblock %}

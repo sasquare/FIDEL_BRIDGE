@@ -147,6 +147,18 @@ def register_cli_commands(app):
         db.session.commit()
         print(f"Admin account created for {email}.")
 
+    @app.cli.command("send-profile-completion-reminders")
+    def send_profile_completion_reminders_command():
+        """Send any due day-3/7/14 profile completion reminder emails.
+        Safe to run on any cadence (daily, hourly, ad hoc) - wire this up to
+        whatever scheduler you use (a Render Cron Job, a scheduled GitHub
+        Action, etc.). Each professional's own state decides what's due, so
+        running this more than once never sends a duplicate."""
+        from app.utils.profile_emails import run_due_reminders
+
+        sent = run_due_reminders()
+        print(f"Sent {sent} profile completion reminder email(s).")
+
 
 def register_security(app):
     @app.after_request

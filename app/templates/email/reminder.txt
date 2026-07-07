@@ -1,0 +1,13 @@
+Hello {{ first_name }},
+
+{{ tone }}
+
+Professionals with a high Trust Score are more visible across FidelBridge and are recommended to customers more frequently than professionals with incomplete profiles.
+
+You're {{ percentage }}% complete. Here's what's left:
+{% for item in incomplete_items %}- {{ item.label }}
+{% endfor %}
+Complete My Profile: {{ cta_url }}
+
+Thank you for choosing FidelBridge.
+The FidelBridge Team

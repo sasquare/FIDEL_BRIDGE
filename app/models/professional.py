@@ -85,6 +85,20 @@ class ProfessionalProfile(db.Model):
 
     created_at = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
 
+    # Profile Completion email campaign (app/utils/profile_emails.py). All
+    # three are nullable "not sent yet" markers, not booleans, so each also
+    # doubles as an audit trail of exactly when a campaign email went out.
+    welcome_email_sent_at = db.Column(db.DateTime, nullable=True)
+    # 0 = no reminder sent yet, 1/2/3 = the day-3/7/14 reminder last sent.
+    # Monotonic - see profile_emails.py's run_due_reminders for why this
+    # never resets to a lower stage even if completion drops back down.
+    profile_reminder_stage = db.Column(db.Integer, nullable=False, default=0)
+    profile_reminder_sent_at = db.Column(db.DateTime, nullable=True)
+    # Set the first time profile_completion_percentage reaches 100, so the
+    # one-time congratulations email never fires a second time even if the
+    # professional later edits their profile below 100% and back again.
+    profile_completion_congrats_sent_at = db.Column(db.DateTime, nullable=True)
+
     __table_args__ = (
         db.CheckConstraint(professional_type.in_(PROFESSIONAL_TYPES), name="ck_professional_profiles_type_valid"),
         db.CheckConstraint(pricing_type.in_(PRICING_TYPES), name="ck_professional_profiles_pricing_type_valid"),
